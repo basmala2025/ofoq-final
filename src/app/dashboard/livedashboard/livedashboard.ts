@@ -4,7 +4,7 @@ import { Chart } from 'chart.js/auto';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Navbar } from '../navbar/navbar';
-import { AudioRecordingService } from '../audio-recording.service.ts';
+import { AudioRecordingService } from '../../services/audio-recording';
 
 interface Student {
   id: string;

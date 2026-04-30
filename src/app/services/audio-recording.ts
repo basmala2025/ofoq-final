@@ -6,12 +6,14 @@ import { Router } from '@angular/router';
 export class AudioRecordingService {
   private http = inject(HttpClient);
   private router = inject(Router);
+
+  // Base URL for the OFOQ API
   private baseUrl = 'https://ofoqai.runasp.net/api';
   private mediaRecorder: MediaRecorder | null = null;
   private audioChunks: Blob[] = [];
 
   /**
-   * Initializes the microphone stream and starts recording audio chunks.
+   * Initializes the microphone and starts recording audio chunks.
    */
   async startRecording() {
     this.audioChunks = [];
@@ -26,60 +28,62 @@ export class AudioRecordingService {
       };
 
       this.mediaRecorder.start();
-      console.log('🎙️ Microphone recording started...');
+      console.log(' Microphone recording started...');
     } catch (error) {
-      console.error('❌ Microphone Error:', error);
+      console.error(' Microphone Error:', error);
       throw error;
     }
   }
 
   /**
-   * Stops the current recording, packages the audio as a Blob,
-   * and uploads it to the backend via FormData.
+   * Stops recording, creates an audio blob, and uploads it to the backend.
+   * @param sessionData - Data collected during the session.
+   * @param lectureId - The ID of the lecture created during Start Session.
    */
   stopRecordingAndSend(sessionData: any, lectureId: string) {
     if (!this.mediaRecorder) return;
 
     this.mediaRecorder.onstop = () => {
-      // Create a blob using the browser's native webm type to prevent file corruption
+      // 1. Compile the audio chunks into a native WebM Blob
       const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
-      const fileSizeKB = (audioBlob.size / 1024).toFixed(2);
-      console.log(`📊 Final Audio File Size: ${fileSizeKB} KB`);
 
       if (audioBlob.size === 0) {
-        alert('Recorded file is empty!');
+        alert('Recorded audio file is empty!');
         return;
       }
 
       const formData = new FormData();
-      // Using 'file' as the key to match the Swagger API documentation
+
+      // 🔴 CRITICAL FIX: The key must be exactly 'file', NOT 'audioFile'
       formData.append('file', audioBlob, 'lecture-audio.webm');
 
-      // Optional: Include sessionData if required by future backend iterations
-      // formData.append('sessionData', JSON.stringify(sessionData));
+      const uploadUrl = `${this.baseUrl}/lectures/${lectureId}/process-audio`;
+      console.log(`Uploading audio directly... Size: ${(audioBlob.size / 1024).toFixed(2)} KB`);
 
-      console.log(`📤 Sending to: ${this.baseUrl}/lectures/${lectureId}/process-audio`);
+      // 2. Send the POST request
+      this.http.post<any>(uploadUrl, formData).subscribe({
+        next: (res) => {
+          console.log(' AI Processing Successful!', res);
+          alert('Audio uploaded and processed successfully!');
+        },
+        error: (err) => {
+          console.error(' API Processing Error:', err);
+          const errorMsg = err.error?.message || err.error?.title || 'Unknown Error';
+          alert(`Backend Error: ${errorMsg}`);
+        }
+      });
 
-      this.http.post(`${this.baseUrl}/lectures/${lectureId}/process-audio`, formData)
-        .subscribe({
-          next: (res: any) => {
-            console.log('🚀 AI Success! Response:', res);
-            if (res.summary) {
-              console.log('%c📝 Summary:', 'color: #7113c8; font-weight: bold;', res.summary);
-            }
-            alert('Summary received successfully! Check the Console.');
-          },
-          error: (err) => {
-            console.error('❌ API Error:', err.error);
-            alert(`Server Error: ${err.error?.message || 'Unexpected Error'}`);
-          }
-        });
-
-      // Stop all tracks in the stream to release the microphone hardware
+      // 3. Release microphone hardware resources
       this.mediaRecorder?.stream.getTracks().forEach(track => track.stop());
     };
 
     this.mediaRecorder.stop();
-    console.log('🔴 Recording stopped.');
+  }
+
+  /**
+   * Retrieves the saved summary and transcript for a specific lecture.
+   */
+  getLectureSummary(lectureId: string) {
+    return this.http.get<any>(`${this.baseUrl}/lectures/${lectureId}/summary`);
   }
 }

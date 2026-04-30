@@ -25,7 +25,6 @@ export class DataService {
   loadAssignedCourses() {
     return this.http.get<any>(`${this.baseUrl}/Courses/assigned`).pipe(
       map(response => {
-        // 1. Extract the array from various possible response structures
         let coursesArray = [];
         if (Array.isArray(response)) {
           coursesArray = response;
@@ -33,11 +32,10 @@ export class DataService {
           coursesArray = response.courses ? response.courses : (response.data ? response.data : []);
         }
 
-        // 2. Mapping logic: Ensure every course object has an 'id' property
         return coursesArray.map((c: any) => {
           return {
-            ...c, // Spread existing properties
-            id: c.courseId || c.id // Ensure 'id' exists whether backend sends courseId or id
+            ...c,
+            id: c.courseId || c.id
           };
         });
       }),
@@ -50,43 +48,41 @@ export class DataService {
 
   /**
    * Creates a new lecture for a specific course using FormData.
-   * Includes a dummy PDF file to satisfy backend requirements for file uploads.
+   * Sends ONLY text fields as requested by the updated API logic (No File).
    */
-  createLecture(courseId: string) {
+createLecture(courseId: string, title: string, description: string) {
     const formData = new FormData();
 
-    // 1. Textual fields
-    formData.append('title', `Lecture - ${new Date().toLocaleDateString()}`);
-    formData.append('description', 'AI Session Initiation');
+    formData.append('title', title);
+    formData.append('description', description);
+
     formData.append('lectureDate', new Date().toISOString());
 
-    // 2. Dummy File Creation: Generates a minimal valid-header PDF blob
-    const pdfContent = "%PDF-1.4\n1 0 obj\n<< /Title (Dummy PDF) >>\nendobj\ntrailer\n<< /Root 1 0 R >>\n%%EOF";
-    const dummyFile = new File([pdfContent], "lecture_start.pdf", { type: "application/pdf" });
+    const pdfHeader = "%PDF-1.4\n1 0 obj\n<< /Title (Dummy PDF) >>\nendobj\n";
+    const fakeContent = "OFOQ AI Dummy Padding Content. ".repeat(300);
+    const pdfFooter = "\ntrailer\n<< /Root 1 0 R >>\n%%EOF";
 
-    // 3. Append the dummy file to the 'file' field
-    formData.append('file', dummyFile);
+    const dummyBlob = new Blob([pdfHeader + fakeContent + pdfFooter], { type: "application/pdf" });
+    const dummyPdfFile = new File([dummyBlob], "lecture_start.pdf", { type: "application/pdf" });
 
-    console.log('📤 Sending FormData with a dummy PDF file...');
+    formData.append('file', dummyPdfFile);
+
+    console.log(`📤 Sending Lecture Data... Course: ${courseId}`);
 
     return this.http.post<any>(`${this.baseUrl}/courses/${courseId}/lectures`, formData);
   }
-
   /**
    * Synchronously finds a course from the local signal state by its ID.
    */
   getCourseById(id: string): Course | undefined {
     const allCourses = this.courses();
-    // Uses the 'id' property defined in the local model
     return allCourses.find(c => c.id === id);
   }
 
   /**
    * Retrieves past sessions for a specific course.
-   * Currently returns an empty array as a placeholder for future API integration.
    */
   getSessionsByCourse(courseId: string): Session[] {
-    // TODO: Implement HTTP GET request when the Sessions API is ready
     return [];
   }
 }

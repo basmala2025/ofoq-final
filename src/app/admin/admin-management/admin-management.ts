@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AdminDataService, User, Course } from '../../services/admin';
 import { Router } from '@angular/router';
-
+const storedId = localStorage.getItem('userId');
 @Component({
   selector: 'app-admin-management',
   standalone: true,
@@ -43,13 +43,27 @@ export class AdminManagement {
     { id: 'Admin', label: 'Admins' }
   ];
 
-  // Computed signal to filter users based on selected role
-  filteredUsers = computed(() => {
-    const filter = this.selectedRoleFilter();
-    const allUsers = this.dataService.users();
-    if (filter === 'all') return allUsers;
-    return allUsers.filter(u => u.role === filter);
+searchQuery = signal<string>('');
+
+filteredUsers = computed(() => {
+  const filter = this.selectedRoleFilter();
+  const query = this.searchQuery().toLowerCase().trim();
+  const allUsers = this.dataService.users();
+
+  return allUsers.filter(u => {
+    const matchesRole = filter === 'all' || u.role === filter;
+
+    const matchesSearch = u.fullName.toLowerCase().includes(query) ||
+                          u.email.toLowerCase().includes(query);
+
+    return matchesRole && matchesSearch;
   });
+});
+
+onSearch(event: Event) {
+  const value = (event.target as HTMLInputElement).value;
+  this.searchQuery.set(value);
+}
 
   // Filtered lists for professors and TAs
   professors = computed(() => this.dataService.users().filter(u => u.role === 'Professor'));
@@ -116,10 +130,22 @@ export class AdminManagement {
     }
   }
 
+currentAdmin = computed(() => {
+    const allUsers = this.dataService.users();
+    const myId = localStorage.getItem('userId');
+
+    if (!myId) return null;
+
+    return allUsers.find(u => u.userId === myId) || null;
+  });
   // View specific user details in a summary/modal
-  viewUserDetails(user: User) {
+  viewUserDetails(user?: User) {
+  if (user) {
     this.viewingUser.set(user);
+  } else {
+    this.viewingUser.set(this.currentAdmin() || null);
   }
+}
 
   // Handle User Form submission (Invite or Update)
   submitUser() {

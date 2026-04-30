@@ -218,15 +218,12 @@
   position: relative;
 }
 
-/* 🔴 السحر كله هنا: تأثير الـ Hover */
 .course-card-unit:hover {
   transform: translateY(-8px);
-  /* ظل بنفسجي خفيف بيدي إيحاء بالوهج */
   box-shadow: 0 20px 40px -10px rgba(95, 54, 158, 0.15);
   border-color: rgba(95, 54, 158, 0.3);
 }
 
-/* الشريط الملون اللي فوق الكارت */
 .card-gradient-bar {
   height: 6px;
   width: 100%;
@@ -246,8 +243,50 @@
   justify-content: space-between;
   align-items: center;
 }
+.filter-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  gap: 20px;
+  flex-wrap: wrap;
+}
 
-/* بادج كود المادة (واخد لون برتقالي هادي) */
+.search-wrapper {
+  flex: 1;
+  max-width: 400px;
+}
+
+.search-input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-icon {
+  position: absolute;
+  left: 12px;
+  width: 18px;
+  height: 18px;
+  color: #94a3b8;
+}
+
+.search-input {
+  width: 100%;
+  padding: 10px 10px 10px 40px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  background: #f8fafc;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #6366f1;
+  background: #ffffff;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+}
 .course-code-tag {
   background: rgba(244, 117, 69, 0.1);
   color: #f47545;
@@ -258,7 +297,6 @@
   letter-spacing: 0.05em;
 }
 
-/* زراير الأكشن (مخفية وبتظهر بنعومة من الجنب) */
 .card-actions {
   display: flex;
   gap: 0.5rem;
@@ -299,7 +337,6 @@
   transition: all 0.3s;
 }
 
-/* 🔴 حركة روشة: النص نفسه بياخد ألوان الثييم لما تقفي عالكارت */
 .course-card-unit:hover .course-title-text {
   background: linear-gradient(90deg, #f47545 0%, #5f369e 100%);
   -webkit-background-clip: text;
@@ -353,4 +390,138 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+/* ضبط شبكة الكروت */
+.course-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 2rem;
+  padding: 1rem;
+  align-items: start; /* يمنع الكروت من التمدد الرأسي الإجباري لآخر الصفحة */
+}
+
+.course-card-unit {
+  background: #ffffff;
+  border-radius: 24px;
+  border: 1px solid #edf2f7;
+  display: flex;
+  flex-direction: column;
+  min-height: 400px; /* طول ثابت أدنى لتوحيد الشكل */
+  max-height: 450px; /* طول أقصى لمنع الكارت من التحول لشريط طويل */
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.course-card-unit:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 25px -5px rgba(95, 54, 158, 0.1);
+  border-color: #5f369e;
+}
+
+.card-content-wrap {
+  padding: 1.75rem;
+  display: flex;
+  flex-direction: column;
+  flex: 1; /* يسمح للمحتوى الداخلي بالنمو */
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+}
+
+.course-icon-box {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 800;
+  font-size: 1.4rem;
+}
+
+/* الأكشنز تظهر أرتب */
+.card-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.small-icon-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+/* الجسم والوصف */
+.card-body {
+  flex: 1; /* بياخد كل المساحة المتاحة ويدفع الفوتر للأسفل */
+}
+
+.course-code-tag {
+  background: #fff7ed;
+  color: #f47545;
+  padding: 0.25rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  border: 1px solid #ffedd5;
+}
+
+.course-title-text {
+  font-size: 1.35rem;
+  font-weight: 900;
+  color: #1a202c;
+  margin: 1rem 0 0.5rem 0;
+  line-height: 1.2;
+}
+
+.course-desc {
+  font-size: 0.9rem;
+  color: #718096;
+  line-height: 1.6;
+  /* إجبار النص على البقاء ضمن 3 سطور فقط للحفاظ على تناسق الكروت */
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin: 0;
+}
+
+/* الفوتر */
+.card-footer {
+  margin-top: auto; /* يضمن بقاء الفوتر أسفل الكارت دائماً */
+  padding-top: 1.5rem;
+  border-top: 1px solid #f7fafc;
+}
+
+.staff-label-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.staff-label {
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #a0aec0;
+  text-transform: uppercase;
+}
+
+.staff-names {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #2d3748;
+  margin: 0 0 0 1.5rem;
 }

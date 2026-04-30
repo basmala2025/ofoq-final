@@ -321,12 +321,19 @@ export class ExamEditorComponent implements AfterViewInit, OnDestroy {
     this.router.navigate(['/'], { replaceUrl: true });
   }
 
-  private stopEverything() {
-    if (this.hubConnection) this.hubConnection.stop(); // 💡 Close .NET backend connection
+ private stopEverything() {
+    if (this.hubConnection) this.hubConnection.stop();
     if (this.audioRecorder && this.audioRecorder.state !== 'inactive') this.audioRecorder.stop();
-    if (this.mediaStream) this.mediaStream.getTracks().forEach(t => t.stop());
-    this.socketService.disconnect(); // Close Python socket connection
 
+    if (this.mediaStream) {
+      this.mediaStream.getTracks().forEach(t => t.stop());
+      this.mediaStream = null;
+    }
+    if (this.videoElement && this.videoElement.nativeElement) {
+      this.videoElement.nativeElement.srcObject = null; 
+    }
+
+    this.socketService.disconnect();
     if (this.streamInterval) clearInterval(this.streamInterval);
     if (this.timerInterval) clearInterval(this.timerInterval);
     if (document.exitFullscreen) document.exitFullscreen().catch(() => {});

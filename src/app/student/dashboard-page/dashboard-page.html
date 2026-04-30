@@ -1,61 +1,86 @@
 <app-navbar></app-navbar>
+
 <div class="container">
+  <!-- Banner -->
   <div class="welcome-banner">
     <div class="banner-text">
       <h1>Welcome Back!</h1>
-      <p>You have <strong>{{ stats.available }}</strong> exams available today. Show them what you can do!</p>
+      <p>You have <strong>{{ stats.available }}</strong> exams waiting for you. Good luck!</p>
     </div>
   </div>
 
+  <!-- Stats Grid -->
   <div class="stats-grid">
     <div class="stat-card">
-      <div class="stat-card-header">
-        <span>Available Exams</span>
-        <i class="fas fa-book-open"></i>
-      </div>
+      <div class="stat-card-header"><span>Active Exams</span><i class="fas fa-book-open"></i></div>
       <div class="stat-value">{{ stats.available }}</div>
     </div>
-
     <div class="stat-card">
-      <div class="stat-card-header">
-        <span>Completed</span>
-        <i class="fas fa-check-circle"></i>
-      </div>
+      <div class="stat-card-header"><span>Completed</span><i class="fas fa-check-circle"></i></div>
       <div class="stat-value">{{ stats.completed }}</div>
     </div>
-
     <div class="stat-card">
-      <div class="stat-card-header">
-        <span>Average Score</span>
-        <i class="fas fa-chart-bar"></i>
-      </div>
+      <div class="stat-card-header"><span>Average Score</span><i class="fas fa-chart-bar"></i></div>
       <div class="stat-value">{{ stats.average }}%</div>
     </div>
   </div>
 
-  <div class="exams-section">
-    <h2>Available Exams</h2>
-    <div class="exam-grid">
-      @for( exam of exams ;track $index){
-      <div class="exam-card">
-        <div class="exam-header">
-          <div class="exam-info">
-            <div class="exam-tags">
-              <span class="tag tag-course">{{ exam.course }}</span>
-              <span class="tag tag-time"><i class="far fa-clock"></i> {{ exam.time }} min</span>
-            </div>
-            <div class="exam-title">{{ exam.title }}</div>
-          </div>
-          <button class="btn btn-primary" routerLink="/exam">Start Exam</button>
-        </div>
-      </div>
-    }
+
+  @if(isLoading) {
+    <div style="text-align: center; padding: 2rem;">
+      <p>⏳ Loading your workspace...</p>
     </div>
-  </div>
-</div>
+  } @else {
+    <!-- 1. Active Exams (Based on Enrolled Courses) -->
+    <div class="exams-section">
+      <h2>Your Active Exams</h2>
+      <div class="exam-grid">
+        @for(course of myCourses; track course.courseId) {
+          <div class="exam-card">
+            <div class="exam-header">
+              <div class="exam-info">
+                <div class="exam-tags">
+                  <span class="tag tag-course">{{ course.code }}</span>
+                  <span class="tag tag-time"><i class="far fa-clock"></i> 60 min</span>
+                </div>
+                <div class="exam-title">Final Assessment - {{ course.title }}</div>
+              </div>
+              <button class="btn btn-primary" (click)="startExam(course.courseId)">Start Exam</button>
+            </div>
+          </div>
+        } @empty {
+          <p class="empty-msg" style="color: #64748b;">No active exams. Please enroll in a course first.</p>
+        }
+      </div>
+    </div>
+
+    <!-- 2. Explore & Enroll Section -->
+    <div class="exams-section" style="margin-top: 3rem; border-top: 2px dashed #e2e8f0; padding-top: 2rem;">
+      <h2>Explore Available Courses</h2>
+      <div class="exam-grid">
+        @for(course of availableCourses; track course.courseId) {
+          <div class="exam-card" style="border: 1px solid #e2e8f0; background: #fff;">
+            <div class="exam-header">
+              <div class="exam-info">
+                <div class="exam-tags">
+                  <span class="tag" style="background: #5f369e; color: #e2e8f0;">{{ course.code }}</span>
+                </div>
+                <div class="exam-title">{{ course.title }}</div>
+                <p style="font-size: 0.85rem; color: #64748b; margin-top: 5px;">
+                  {{ course.description || 'Gain new skills in this domain.' }}
+                </p>
+              </div>
+              <button class="btn btn-primary" style="background: linear-gradient(135deg, #f47545 0%, #5f369e 100%);" (click)="enroll(course.courseId)">Enroll Now</button>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
 
 <button class="logout-floating-btn" (click)="logout()" title="Logout">
-  <i class="fas fa-sign-out-alt">log <br>out</i>
+  <i class="fas fa-sign-out-alt">Log Out</i>
 </button>
 
 <p class="copyright">© 2026 OFOQ System - BFCAI. All rights reserved.</p>
