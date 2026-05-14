@@ -264,7 +264,7 @@
               <label class="item-label col-p">Lead Professor(s)</label>
               <div class="staff-picker">
                 @for (p of professors(); track p.userId) {
-<button type="button" (click)="toggleSelection(p.userId, 'professorIds')"
+                      <button type="button" (click)="toggleSelection(p.userId, 'professorIds')"
                     [class.selected-staff]="isStaffSelected(p.userId, 'professorIds')"
                     class="picker-btn">
                     <span>{{ p.fullName }}</span>

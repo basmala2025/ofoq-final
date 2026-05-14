@@ -1,0 +1,150 @@
+/* ==========================================
+   Main Wrapper & Card Layout
+========================================== */
+.verify-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: #f4f7f9; /* لون خلفية هادي */
+  padding: 20px;
+  font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+.verify-card {
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  padding: 40px 30px;
+  max-width: 500px;
+  width: 100%;
+  text-align: center;
+  border-top: 4px solid #2563eb; /* لمسة زرقاء تقنية من فوق */
+}
+
+.verify-card h2 {
+  color: #1e293b;
+  margin-top: 0;
+  margin-bottom: 8px;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.verify-card p {
+  color: #64748b;
+  margin-bottom: 24px;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+/* ==========================================
+   Camera Container
+========================================== */
+.camera-box {
+  position: relative;
+  width: 100%;
+  max-width: 320px;
+  height: 320px; /* شكل مربع عشان يركز على الوجه */
+  margin: 0 auto 30px;
+  background: #e2e8f0;
+  border-radius: 50%; /* شكل دائري مودرن (ممكن تخليه 12px لو حباه مربع) */
+  overflow: hidden;
+  box-shadow: inset 0 4px 6px rgba(0,0,0,0.1), 0 4px 15px rgba(0,0,0,0.05);
+  border: 4px solid #f8fafc;
+}
+
+.camera-box video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1); /* مهم جداً: بيعكس الكاميرا كأنها مراية */
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* ==========================================
+   Placeholders & Errors
+========================================== */
+.camera-placeholder, .camera-error {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: rgba(226, 232, 240, 0.95);
+  color: #334155;
+  z-index: 10;
+  font-weight: 600;
+}
+
+.camera-error {
+  background: rgba(254, 226, 226, 0.95);
+  color: #dc2626;
+}
+
+/* ==========================================
+   AI Scanner Animation
+========================================== */
+.scanner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: #10b981; /* خط ليزر أخضر */
+  box-shadow: 0 0 15px #10b981, 0 0 30px #10b981;
+  z-index: 20;
+  animation: scan 2s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
+}
+
+@keyframes scan {
+  0% { top: 0; opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { top: calc(100% - 3px); opacity: 0; }
+}
+
+/* ==========================================
+   Button Styling
+========================================== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 28px;
+  font-size: 1rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 100%;
+  max-width: 320px;
+  letter-spacing: 0.5px;
+}
+
+.btn-primary {
+  background-color: #2563eb;
+  color: white;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: #1d4ed8;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.4);
+}
+
+.btn-primary:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btn-primary:disabled {
+  background-color: #94a3b8;
+  color: #e2e8f0;
+  cursor: not-allowed;
+  box-shadow: none;
+}

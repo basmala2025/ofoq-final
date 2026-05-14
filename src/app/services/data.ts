@@ -67,7 +67,7 @@ createLecture(courseId: string, title: string, description: string) {
 
     formData.append('file', dummyPdfFile);
 
-    console.log(`📤 Sending Lecture Data... Course: ${courseId}`);
+    console.log(`Sending Lecture Data... Course: ${courseId}`);
 
     return this.http.post<any>(`${this.baseUrl}/courses/${courseId}/lectures`, formData);
   }

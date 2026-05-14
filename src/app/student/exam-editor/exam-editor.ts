@@ -1,9 +1,10 @@
-import { Component, OnDestroy, ViewChild, ElementRef, AfterViewInit, HostListener } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewInit, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { Router } from '@angular/router';
+import { HttpClient } from '@angular/common/http'; // ✅ ضفنا ה-HttpClient
 import { SocketService } from '../../services/socket';
 import { ExamService } from '../../services/exam';
 import loader from '@monaco-editor/loader';
@@ -16,7 +17,7 @@ import * as signalR from '@microsoft/signalr';
   templateUrl: './exam-editor.html',
   styleUrls: ['./exam-editor.css']
 })
-export class ExamEditorComponent implements AfterViewInit, OnDestroy {
+export class ExamEditorComponent implements OnInit, AfterViewInit, OnDestroy { // ✅ ضفنا OnInit
   @ViewChild('editorContainer', { static: true }) editorContainer!: ElementRef;
   @ViewChild('videoElement') videoElement!: ElementRef;
 
@@ -41,6 +42,9 @@ export class ExamEditorComponent implements AfterViewInit, OnDestroy {
   cvActive = false;
   savedCodeKey = 'ofoq_exam_backup';
 
+  // ✅ متغير لحفظ رقم الجلسة
+  sessionId: string | null = null;
+
   // Timer Configuration
   timeRemaining = 45 * 60;
   timerDisplay = '45:00';
@@ -50,8 +54,32 @@ export class ExamEditorComponent implements AfterViewInit, OnDestroy {
   constructor(
     private router: Router,
     private socketService: SocketService,
-    private examService: ExamService
+    private examService: ExamService,
+    private http: HttpClient // ✅ حقن الـ HttpClient هنا
   ) {}
+
+  // ==========================================
+  // --- 0. Exam Session Initialization ---
+  // ==========================================
+
+  // ✅ الدالة دي هتشتغل أول ما الصفحة تفتح عشان تبلغ الباك إند ببدء الجلسة
+  ngOnInit() {
+    this.sessionId = localStorage.getItem('currentSessionId');
+    if (this.sessionId) {
+      this.http.post(`https://ofoqai.runasp.net/api/v1/exam/start/${this.sessionId}`, {}).subscribe({
+        next: () => {
+          console.log("✅ Exam session officially started on server");
+          this.output += `\n[Server]: Exam session started successfully.`;
+        },
+        error: (err) => {
+          console.error("❌ Failed to start exam session", err);
+          this.output += `\n[Server Warning]: Could not confirm session start.`;
+        }
+      });
+    } else {
+      this.output += `\n[Warning]: No Session ID found in local storage.`;
+    }
+  }
 
   // ==========================================
   // --- 1. Environment Security & Tracking ---
@@ -306,6 +334,14 @@ export class ExamEditorComponent implements AfterViewInit, OnDestroy {
 
     const studentCode = this.editor ? this.editor.getValue() : localStorage.getItem(this.savedCodeKey);
 
+    // ✅ إرسال طلب إغلاق الجلسة للباك إند
+    if (this.sessionId) {
+      this.http.post(`https://ofoqai.runasp.net/api/v1/exam/end/${this.sessionId}`, {}).subscribe({
+        next: () => console.log('✅ Exam session closed on server'),
+        error: (err) => console.error('❌ Failed to close exam session', err)
+      });
+    }
+
     this.examService.submitExam({
       code: studentCode,
       violations: this.violationCount,
@@ -321,7 +357,7 @@ export class ExamEditorComponent implements AfterViewInit, OnDestroy {
     this.router.navigate(['/'], { replaceUrl: true });
   }
 
- private stopEverything() {
+  private stopEverything() {
     if (this.hubConnection) this.hubConnection.stop();
     if (this.audioRecorder && this.audioRecorder.state !== 'inactive') this.audioRecorder.stop();
 
@@ -330,7 +366,7 @@ export class ExamEditorComponent implements AfterViewInit, OnDestroy {
       this.mediaStream = null;
     }
     if (this.videoElement && this.videoElement.nativeElement) {
-      this.videoElement.nativeElement.srcObject = null; 
+      this.videoElement.nativeElement.srcObject = null;
     }
 
     this.socketService.disconnect();

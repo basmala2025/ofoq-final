@@ -68,6 +68,7 @@ export class Login {
           // 3. Save session metadata and user profile details
           // Important: userId/id is required for various DataService API calls
           localStorage.setItem('userId', res.userId || res.id || '');
+          console.log(res.userId);
           localStorage.setItem('isLoggedIn', 'true');
           localStorage.setItem('currentUser', JSON.stringify(res));
 
