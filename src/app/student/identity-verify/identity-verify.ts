@@ -344,29 +344,33 @@ export class IdentityVerifyComponent implements OnInit, AfterViewInit, OnDestroy
     setTimeout(() => this.initCamera(), 500);
   }
 
-  async initCamera() {
-    this.errorMessage = null;
-    this.successMessage = null;
-    try {
-      this.mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { width: 640, height: 480 },
-        audio: false
-      });
+ async initCamera() {
+  this.errorMessage = null;
+  this.successMessage = null;
+  try {
+    this.mediaStream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        width: 640,
+        height: 480,
+        facingMode: 'user' 
+      },
+      audio: false
+    });
 
-      if (this.videoElement && this.videoElement.nativeElement) {
-        this.videoElement.nativeElement.srcObject = this.mediaStream;
-        this.videoElement.nativeElement.onloadedmetadata = () => {
-          this.isCameraReady = true;
-          this.cdr.detectChanges();
-        };
-      }
-    } catch (err) {
-      console.error("Camera access failed:", err);
-      this.cameraError = true;
-      this.isCameraReady = false;
-      this.cdr.detectChanges();
+    if (this.videoElement && this.videoElement.nativeElement) {
+      this.videoElement.nativeElement.srcObject = this.mediaStream;
+      this.videoElement.nativeElement.onloadedmetadata = () => {
+        this.isCameraReady = true;
+        this.cdr.detectChanges();
+      };
     }
+  } catch (err) {
+    console.error("Camera access failed:", err);
+    this.cameraError = true;
+    this.isCameraReady = false;
+    this.cdr.detectChanges();
   }
+}
 
   goBack() {
     window.history.back();
