@@ -1,23 +1,21 @@
 /* ==========================================
-   🌐 OFOQ Ultimate Premium UI (BFCAI 2026)
+    🌐 OFOQ Ultimate Premium UI (BFCAI 2026)
    ========================================== */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 :root {
-  --bg-core: #070714;
-  --bg-gradient: linear-gradient(180deg, #070714 0%, #0b0b1e 100%);
-  --bg-card: #13132a;
-  --border-glow: #222244;
+  --bg-core: #09091e;
+  --bg-gradient: linear-gradient(180deg, #070715 0%, #0c0c27 100%);
+  --bg-card: #141432;
+  --border-glow: #24244d;
   --text-pure: #ffffff;
   --text-secondary: #94a3b8;
   --ofoq-purple: #8b5cf6;
-  --ofoq-pink: #d946ef;
-  --ofoq-sunset: #f97316;
+  --ofoq-neon: #a78bfa;
   --live-red: #ef4444;
-  --live-glow: rgba(239, 68, 68, 0.2);
+  --live-glow: rgba(239, 68, 68, 0.15);
 }
 
-/* 🚨 إجبار المتصفح على قلب الخلفية بالكامل لمنع اللون الأبيض 🚨 */
 html, body {
   background: var(--bg-gradient) !important;
   background-color: var(--bg-core) !important;
@@ -35,58 +33,50 @@ html, body {
 }
 
 /* ==========================================
-   🌅 تدرجات أفق الحقيقية في البانر (OFOQ Banner)
+   🌅 بنر أفق المتناسق (Deep Royal Gradient)
    ========================================== */
 .welcome-banner {
-  background: linear-gradient(135deg, #1e1b4b 0%, #4c1d95 40%, #2563eb 100%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 24px;
-  padding: 3rem;
+            background: linear-gradient(135deg, #f47545 0%, #5f369e 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  padding: 2.5rem 3rem;
   margin-bottom: 2.5rem;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  position: relative;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
 }
 
-/* تدرج نص الترحيب اللامع */
 .banner-text h1 {
-  font-size: 2.5rem;
+  font-size: 2.4rem;
   font-weight: 800;
-  margin: 0 0 0.75rem 0;
-  color: #ffffff !important;
-  letter-spacing: -0.03em;
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  margin: 0 0 0.5rem 0;
+  color: white;
+  letter-spacing: -0.02em;
 }
 
 .banner-text p {
-  color: #e2e8f0 !important; /* تفتيح النص عشان يظهر بوضوح */
-  font-size: 1.15rem;
+  color: #cbd5e1 !important;
+  font-size: 1.1rem;
   margin: 0;
-  font-weight: 500;
 }
 
-.banner-text strong {
-  color: #ffee55 !important; /* لون ذهبي دافئ للرقم لجذب الانتباه */
+.highlight-count {
+  color: #ffd700 !important;
   font-weight: 800;
-  background: none;
-  -webkit-text-fill-color: initial;
+  font-size: 1.2rem;
 }
 
-/* ==========================================
-   📊 الـ Stats الكريستالية النظيفة
-   ========================================== */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 1.5rem;
-  margin-bottom: 4rem;
+  margin-bottom: 3.5rem;
 }
 
 .stat-card {
   background: var(--bg-card);
   border: 1px solid var(--border-glow);
-  border-radius: 20px;
-  padding: 1.75rem;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
 }
 
 .stat-card-header {
@@ -94,94 +84,108 @@ html, body {
   justify-content: space-between;
   align-items: center;
   color: var(--text-secondary);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
 .stat-card-header i {
-  color: var(--ofoq-purple);
-  font-size: 1.25rem;
+  color: var(--ofoq-neon);
+  font-size: 1.2rem;
 }
 
-/* الأرقام منورة بلون أبيض صريح */
 .stat-value {
-  font-size: 2.5rem;
+  font-size: 2.3rem;
   font-weight: 800;
-  margin-top: 1rem;
-  color: #ffffff !important;
-  letter-spacing: -0.02em;
+  margin-top: 0.75rem;
+  color: var(--text-pure) !important;
 }
 
 /* ==========================================
-   🗂️ العناوين والكروت المحدثة
+   🗂️ الكروت والأقسام (Dark Mode Harmonized)
    ========================================== */
 .exams-section h2 {
-  font-size: 1.6rem;
-  font-weight: 800;
-  color: #ffffff;
-  margin-bottom: 2rem;
-  letter-spacing: -0.02em;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-pure);
+  margin-bottom: 1.5rem;
+}
+
+.explore-section {
+  margin-top: 4rem;
+  border-top: 1px dashed var(--border-glow);
+  padding-top: 2.5rem;
 }
 
 .exam-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-  gap: 2rem;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 1.5rem;
 }
 
 .exam-card {
   background: var(--bg-card);
   border: 1px solid var(--border-glow);
-  border-radius: 22px;
-  padding: 2rem;
-  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
+  border-radius: 16px;
+  padding: 1.75rem;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
 }
 
-/* الكارت الحي الحاسم للنظر */
+/* كارت الامتحان اللايف الحاسم بدون فجاجة */
 .exam-card.live-exam-card {
-  border: 1px solid var(--live-red) !important;
-  background: linear-gradient(145deg, var(--bg-card) 0%, #1a080d 100%) !important;
-  box-shadow: 0 0 30px var(--live-glow) !important;
+  border: 1px solid rgba(239, 68, 68, 0.6) !important;
+  background: linear-gradient(145deg, var(--bg-card) 0%, #200d12 100%) !important;
+  box-shadow: 0 0 25px var(--live-glow) !important;
 }
 
-/* تفتيح عنوان المادة عشان يظهر بقوة */
+.exam-header {
+  width: 100%;
+}
+
 .exam-title {
-  color: #ffffff !important;
-  font-size: 1.3rem;
+  color: var(--text-pure) !important;
+  font-size: 1.25rem;
   font-weight: 700;
   margin-top: 0.75rem;
 }
 
-.exam-info p {
+.exam-desc {
   color: var(--text-secondary) !important;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   margin-top: 0.5rem;
+  line-height: 1.5;
 }
 
 /* ==========================================
-   🏷️ الـ Badges المنورة والـ Pulse
+   🏷️ الـ Badges والـ Pulse
    ========================================== */
 .exam-tags {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.5rem;
 }
 
 .tag {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 700;
-  padding: 0.4rem 0.8rem;
-  border-radius: 10px;
+  padding: 0.35rem 0.75rem;
+  border-radius: 8px;
 }
 
 .tag-course {
   background: rgba(139, 92, 246, 0.15);
   color: #c084fc;
   border: 1px solid rgba(139, 92, 246, 0.3);
+}
+
+.tag-explore-code {
+  background: rgba(167, 139, 250, 0.1);
+  color: var(--ofoq-neon);
+  border: 1px solid rgba(167, 139, 250, 0.2);
 }
 
 .tag-live-pulse {
@@ -198,55 +202,56 @@ html, body {
   height: 6px;
   background-color: var(--live-red);
   border-radius: 50%;
-  animation: ofoqPulse 1.2s infinite ease-in-out;
+  animation: ofoqPulse 1.4s infinite ease-in-out;
 }
 
 @keyframes ofoqPulse {
   0% { transform: scale(0.8); opacity: 0.5; }
-  50% { transform: scale(1.4); opacity: 1; box-shadow: 0 0 8px var(--live-red); }
+  50% { transform: scale(1.3); opacity: 1; box-shadow: 0 0 8px var(--live-red); }
   100% { transform: scale(0.8); opacity: 0.5; }
 }
 
 .tag-idle {
   background: rgba(16, 185, 129, 0.1);
   color: #34d399;
-  border: 1px solid rgba(16, 185, 129, 0.2);
+  border: 1px solid rgba(16, 185, 129, 0.15);
 }
 
 .tag-time {
   background: rgba(255, 255, 255, 0.05);
   color: var(--text-secondary);
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-/* ⚠️ بوكس التحذير الناري الظاهر */
+/* ⚠️ بوكس التنبيه المريح */
 .live-exam-alert-box {
-  background: rgba(239, 68, 68, 0.07);
-  border-left: 4px solid var(--live-red);
-  padding: 1rem;
-  border-radius: 8px;
-  margin-top: 1.5rem;
+  background: rgba(239, 68, 68, 0.08);
+  border-left: 3px solid var(--live-red);
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  margin-top: 1rem;
 }
 
 .live-exam-alert-box p {
   font-size: 0.85rem;
   color: #fca5a5 !important;
   margin: 0;
-  line-height: 1.5;
 }
 
 /* ==========================================
-   🚀 الـ Buttons المضيئة (Buttons & Actions)
+   🚀 الـ Buttons المضيئة (Buttons)
    ========================================== */
 .exam-action-zone {
-  margin-top: 2rem;
+  margin-top: 1.5rem;
+  width: 100%;
 }
 
 .btn {
   width: 100%;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-weight: 700;
-  padding: 0.85rem;
-  border-radius: 12px;
+  padding: 0.75rem;
+  border-radius: 10px;
   border: none;
   cursor: pointer;
   display: flex;
@@ -256,55 +261,80 @@ html, body {
   transition: all 0.2s ease;
 }
 
-/* زرار Launch الـ Premium المضيء بتدرج ناري */
+/* زر إطلاق الامتحان الناري المشرق */
 .btn-primary.btn-live-trigger {
-  background: linear-gradient(135deg, #ef4444 0%, #ec4899 100%) !important; /* تدرج أفق الناري */
-  color: #ffffff !important;
-  box-shadow: 0 8px 20px rgba(239, 68, 68, 0.4);
+  background: linear-gradient(135deg, #ef4444 0%, #c084fc 100%) !important;
+  color: var(--text-pure) !important;
+  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
 }
 
 .btn-primary.btn-live-trigger:hover {
   transform: translateY(-2px);
-  box-shadow: 0 12px 25px rgba(239, 68, 68, 0.6);
+  box-shadow: 0 8px 20px rgba(239, 68, 68, 0.45);
+}
+
+/* زر التسجيل في الكورسات المتاح استكشافها */
+.btn-enroll {
+  background: linear-gradient(135deg, #6366f1 0%, #a78bfa 100%) !important;
+  color: var(--text-pure) !important;
+}
+
+.btn-enroll:hover {
+  transform: translateY(-2px);
   filter: brightness(1.1);
 }
 
-/* زرار مقفول شيك ومتناسق مع الخلفية */
 .btn-secondary {
-  background: #1e1e38 !important;
+  background: #1c1c3a !important;
   color: #475569 !important;
-  border: 1px solid #2a2a4a !important;
+  border: 1px solid #27274a !important;
   cursor: not-allowed;
 }
 
 /* ==========================================
-   🚪 الـ Floating Logout & Copyright
+   ⚙️ عناصر إضافية
    ========================================== */
+.loading-workspace {
+  text-align: center;
+  padding: 3rem;
+  color: var(--text-secondary);
+}
+
+.empty-msg {
+  color: var(--text-secondary);
+  grid-column: 1 / -1;
+  font-size: 0.95rem;
+}
+
 .logout-floating-btn {
   position: fixed;
-  bottom: 2.5rem;
-  right: 2.5rem;
-  background: #1a1a3a;
+  bottom: 2rem;
+  right: 2rem;
+  background: #1c1c3a;
   border: 1px solid var(--border-glow);
-  color: #ffffff;
-  padding: 0.9rem 1.75rem;
-  border-radius: 50px;
-  font-weight: 700;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            background: linear-gradient(135deg, #f47545 0%, #5f369e 100%);
+  padding: 0.75rem 1.5rem;
+  border-radius: 500px;
+  font-weight: 600;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
   cursor: pointer;
   z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   transition: all 0.2s ease;
 }
 
 .logout-floating-btn:hover {
   background: var(--live-red);
-  transform: translateY(-3px);
-  box-shadow: 0 8px 20px rgba(239, 68, 68, 0.4);
+  border-color: var(--live-red);
+  transform: translateY(-2px);
 }
 
 .copyright {
   text-align: center;
   color: #334155;
   font-size: 0.8rem;
-  margin-top: 6rem;
+  margin-top: 5rem;
+  padding-bottom: 2rem;
 }

@@ -314,6 +314,8 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
     }
   `]
 })
+
+
 export class IdentityVerifyComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('videoElement') videoElement!: ElementRef<HTMLVideoElement>;
   @ViewChild('canvasElement') canvasElement!: ElementRef<HTMLCanvasElement>;
@@ -344,33 +346,33 @@ export class IdentityVerifyComponent implements OnInit, AfterViewInit, OnDestroy
     setTimeout(() => this.initCamera(), 500);
   }
 
- async initCamera() {
-  this.errorMessage = null;
-  this.successMessage = null;
-  try {
-    this.mediaStream = await navigator.mediaDevices.getUserMedia({
-      video: {
-        width: 640,
-        height: 480,
-        facingMode: 'user' 
-      },
-      audio: false
-    });
+  async initCamera() {
+    this.errorMessage = null;
+    this.successMessage = null;
+    try {
+      this.mediaStream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          width: 640,
+          height: 480,
+          facingMode: 'user'
+        },
+        audio: false
+      });
 
-    if (this.videoElement && this.videoElement.nativeElement) {
-      this.videoElement.nativeElement.srcObject = this.mediaStream;
-      this.videoElement.nativeElement.onloadedmetadata = () => {
-        this.isCameraReady = true;
-        this.cdr.detectChanges();
-      };
+      if (this.videoElement && this.videoElement.nativeElement) {
+        this.videoElement.nativeElement.srcObject = this.mediaStream;
+        this.videoElement.nativeElement.onloadedmetadata = () => {
+          this.isCameraReady = true;
+          this.cdr.detectChanges();
+        };
+      }
+    } catch (err) {
+      console.error("Camera access failed:", err);
+      this.cameraError = true;
+      this.isCameraReady = false;
+      this.cdr.detectChanges();
     }
-  } catch (err) {
-    console.error("Camera access failed:", err);
-    this.cameraError = true;
-    this.isCameraReady = false;
-    this.cdr.detectChanges();
   }
-}
 
   goBack() {
     window.history.back();
@@ -420,6 +422,7 @@ export class IdentityVerifyComponent implements OnInit, AfterViewInit, OnDestroy
         this.successMessage = "📡 Syncing biometric data with OFOQ AI Server...";
         this.cdr.detectChanges();
 
+        // 🔗 الربط بالـ API الحقيقي لإرسال الداتا الفعلية بعد انتهاء اللقطات
         this.sendFivePhotosToApi(capturedBlobs, token);
         return;
       }
@@ -435,11 +438,23 @@ export class IdentityVerifyComponent implements OnInit, AfterViewInit, OnDestroy
           capturedBlobs.push(blob);
           frameCount++;
           this.successMessage = `Capturing secure biological frames (${frameCount}/5)...`;
+
+          // 📥 ─── [كود تحميل ومعاينة الفريمات تلقائياً] ───
+          const blobUrl = URL.createObjectURL(blob);
+          const downloadLink = document.createElement('a');
+          downloadLink.href = blobUrl;
+          downloadLink.download = `Ofoq_Frame_${frameCount}.jpg`;
+          document.body.appendChild(downloadLink);
+          downloadLink.click();
+          document.body.removeChild(downloadLink);
+          URL.revokeObjectURL(blobUrl);
+          // ───────────────────────────────────────────
+
           this.cdr.detectChanges();
         }
       }, 'image/jpeg', 0.95);
 
-    }, 700); // ⏱️ تم التعديل هنا من 400 إلى 700 مللي ثانية
+    }, 700);
   }
 
   private sendFivePhotosToApi(blobs: Blob[], token: string) {
@@ -449,7 +464,8 @@ export class IdentityVerifyComponent implements OnInit, AfterViewInit, OnDestroy
       formData.append('frames', blob, `frame_${index + 1}.jpg`);
     });
 
-    formData.append('session_id', this.examId || '');
+    // استخدام الـ Session ID الحقيقي الثابت والمخزن حالياً بالرابط أو الممرر
+    formData.append('session_id', this.examId || localStorage.getItem('currentSessionId') || '');
 
     const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
     const url = `https://ofoqai.runasp.net/api/v1/exam/verify-entry`;
@@ -474,6 +490,12 @@ export class IdentityVerifyComponent implements OnInit, AfterViewInit, OnDestroy
 
           this.turnOffCamera();
           this.isVerificationSuccessful = true;
+
+          // 🚀 الانتقال المباشر وبدء الامتحان فور نجاح استجابة السيرفر الحقيقية
+          setTimeout(() => {
+            this.startActualExam();
+          }, 400);
+
         } else {
           this.successMessage = null;
           this.errorMessage = res.message || "Identity mismatch. Please center your face in the sensor framework and try again.";
@@ -484,55 +506,10 @@ export class IdentityVerifyComponent implements OnInit, AfterViewInit, OnDestroy
         console.error('Biometric validation crashed:', err);
         this.isVerifying = false;
         this.successMessage = null;
-
         this.errorMessage = "Biometric sync timeout or network barrier. Please verify sensor configuration.";
         this.cdr.detectChanges();
       }
     });
-  }
-
-  private sendPhotoToApi(blob: Blob, token: string) {
-    const formData = new FormData();
-    formData.append('frames', blob, 'capture.jpg');
-    formData.append('session_id', this.examId || '');
-
-    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
-    const url = `https://ofoqai.runasp.net/api/v1/exam/verify-entry`;
-
-    this.http.post<any>(url, formData, { headers })
-      .subscribe({
-        next: (res) => {
-          this.isVerifying = false;
-
-          if (res.verified === true) {
-            this.errorMessage = null;
-            this.successMessage = "Identity Verified! Ready to begin your secure session.";
-
-            if (res.session_id) {
-              localStorage.setItem('currentSessionId', res.session_id);
-            }
-            if (res.remaining_seconds) {
-               localStorage.setItem('examRemainingSeconds', res.remaining_seconds.toString());
-            }
-            if (res.exam_title) {
-               localStorage.setItem('examTitle', res.exam_title);
-            }
-
-            this.turnOffCamera();
-            this.isVerificationSuccessful = true;
-          } else {
-            this.successMessage = null;
-            this.errorMessage = res.message || "Identity mismatch. Please face the sensor clearly and retry.";
-          }
-          this.cdr.detectChanges();
-        },
-        error: (err) => {
-          this.isVerifying = false;
-          this.successMessage = null;
-          this.errorMessage = "Connection error during biometric sync. Please try again.";
-          this.cdr.detectChanges();
-        }
-      });
   }
 
   startActualExam() {
@@ -553,7 +530,7 @@ export class IdentityVerifyComponent implements OnInit, AfterViewInit, OnDestroy
     this.http.post(url, body, { headers }).subscribe({
       next: (res) => {
         console.log('✅ Exam session successfully recorded in Database!', res);
-        this.router.navigate(['/exam', this.examId]);
+        this.router.navigate(['/exam', this.examId || sessionId]);
       },
       error: (err) => {
         console.warn('⚠️ Server refused start token (400), triggering secure fallback route...', err);
@@ -562,8 +539,7 @@ export class IdentityVerifyComponent implements OnInit, AfterViewInit, OnDestroy
           localStorage.setItem('examRemainingSeconds', '3600');
           localStorage.setItem('examTitle', 'OFOQ Secure Assessment System');
         }
-
-        this.router.navigate(['/exam', this.examId]);
+        this.router.navigate(['/exam', this.examId || sessionId]);
       }
     });
   }
