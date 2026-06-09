@@ -310,12 +310,12 @@
   </div>
 
   <div class="students-section">
-    <h2 class="section-title">👥 Student Attendance List</h2>
+    <h2 class="section-title">👥 Student Attendance & Focus</h2>
     <div class="students-table">
       <div class="table-header">
         <div class="table-cell">Name</div>
         <div class="table-cell">Status</div>
-      </div>
+        <div class="table-cell">Average Focus</div> </div>
       @for(student of summary?.students; track student.id) {
         <div class="table-row" [class.absent]="!student.present">
           <div class="table-cell">
@@ -326,6 +326,15 @@
             <span class="status-badge" [class.present]="student.present">
               {{ student.present ? '✅ Present' : '❌ Absent' }}
             </span>
+          </div>
+          <div class="table-cell">
+            @if(student.present) {
+              <strong [style.color]="student.averageFocus >= 80 ? '#10b981' : (student.averageFocus >= 60 ? '#eab308' : '#ef4444')">
+                {{ student.averageFocus }}%
+              </strong>
+            } @else {
+              <span style="color: #9ca3af;">-</span>
+            }
           </div>
         </div>
       }

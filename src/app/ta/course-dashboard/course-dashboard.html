@@ -1,0 +1,123 @@
+<div class="back-navigation-bar">
+  <button class="btn-back-nav" (click)="onBackToHome()">
+    ← Back to Main Dashboard
+  </button>
+</div>
+
+<div class="section-block" id="view2">
+  <div class="section-divider">
+    <div class="section-label">
+      <span class="label-num">2</span> Course Dashboard
+    </div>
+    <div class="section-divider-line"></div>
+  </div>
+
+  <div *ngIf="isLoading()" class="loading-placeholder">
+    <p>Loading course metadata and active exam logs...</p>
+  </div>
+
+  <div *ngIf="!isLoading() && courseInfo()">
+
+    <div class="course-top-bar">
+      <div class="course-info">
+        <div class="course-icon">🤖</div>
+        <div>
+          <div class="course-top-name">{{ courseInfo()?.name }}</div>
+          <div class="course-top-meta">
+            {{ courseInfo()?.code }} &nbsp;·&nbsp;
+            {{ courseInfo()?.enrolledStudentsCount }} enrolled &nbsp;·&nbsp;
+            {{ courseInfo()?.semester || 'Active Semester' }}
+          </div>
+        </div>
+      </div>
+
+      <div class="course-top-actions">
+        <button class="btn btn-outline btn-sm" (click)="onViewCourseAnalytics()">Course Analytics</button>
+        <button class="btn btn-outline btn-sm" (click)="onViewStudents()">Students</button>
+        <button class="btn btn-grad" (click)="onCreateNewExam()">+ Create New Exam</button>
+      </div>
+    </div>
+
+    <div class="exams-section">
+      <div class="exams-header">
+        <div>
+          <div class="heading-md">Past Exams</div>
+          <div class="subtext">{{ exams().length }} exams total this semester</div>
+        </div>
+        <button class="btn btn-ghost btn-sm">Filter ▾</button>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Exam Name</th>
+              <th>Type</th>
+              <th>Total Attendees</th>
+              <th>Date</th>
+              <th>Avg Grade</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (exam of exams(); track exam.id) {
+              <tr>
+                <td>
+                  <div class="exam-name-cell">{{ exam.title }}</div>
+                  <div class="exam-name-sub">{{ exam.submissionsCount }}</div>
+                </td>
+                <td>
+                  <span class="badge" [ngClass]="exam.type === 'Lab' ? 'badge-purple' : 'badge-blue'">
+                    {{ exam.type || 'Online' }}
+                  </span>
+                </td>
+                <td>
+                  <span class="attendee-chip">👤 {{ exam.attendance }}</span>
+                </td>
+                <td>
+                  <span class="muted">{{ exam.scheduledDate | date:'mediumDate' }}</span>
+                </td>
+                <td>
+                  <strong [style.color]="exam.avgGrade !== 'N/A' ? 'var(--green)' : 'var(--tx-3)'">
+                    {{ exam.avgGrade }}
+                  </strong>
+                </td>
+                <td>
+                  <span class="badge" [ngClass]="{
+                    'badge-green': exam.status === 'Graded',
+                    'badge-amber': exam.status === 'Reviewing',
+                    'badge-gray': exam.status === 'Scheduled'
+                  }">{{ exam.status }}</span>
+                </td>
+                <td>
+                  <div style="display: flex; gap: 8px; align-items: center;">
+                    <button
+                      class="btn btn-outline btn-sm"
+                      title="View Live AI Analytics"
+                      (click)="onViewLiveExamStats(exam.id)">
+                      📊 Live Feed
+                    </button>
+
+                    <button
+                      class="btn btn-sm"
+                      [ngClass]="exam.status === 'Scheduled' ? 'btn-outline' : 'btn-grad'"
+                      (click)="onViewExamSummary(exam.id)">
+                      {{ exam.status === 'Scheduled' ? 'Configure' : 'View Summary' }}
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="7" class="text-center muted" style="padding: 40px; font-style: italic;">
+                  No exams deployed yet for this specific course.
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

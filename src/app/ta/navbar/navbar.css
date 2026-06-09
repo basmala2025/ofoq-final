@@ -1,0 +1,69 @@
+/* src/app/features/ta-dashboard/layout/navbar/navbar.component.scss */
+
+.navbar {
+  position: sticky; top: 0; z-index: 200;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 12px;
+  padding: 0 32px;
+  height: 58px;
+}
+
+.nav-logo {
+  display: flex; align-items: center; gap: 10px;
+  text-decoration: none;
+}
+
+.nav-logo-mark {
+  width: 34px; height: 34px;
+  background: var(--grad);
+  border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 800; color: #fff;
+  letter-spacing: -.5px;
+}
+
+.nav-logo-text {
+  font-size: 15px; font-weight: 800;
+  background: var(--grad);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -.3px;
+}
+
+.nav-sep { width: 1px; height: 22px; background: var(--border); margin: 0 4px; }
+
+.nav-links {
+  display: flex; align-items: center; gap: 2px;
+  list-style: none;
+}
+
+.nav-links a {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 13px; font-weight: 500;
+  color: var(--tx-2);
+  text-decoration: none;
+  transition: background var(--t) var(--ease), color var(--t) var(--ease);
+}
+
+.nav-links a:hover { background: var(--bg); color: var(--tx-1); }
+
+.nav-links a.active {
+  background: linear-gradient(135deg, rgba(244, 117, 69, 0.1), rgba(95, 54, 158, 0.1));
+  color: var(--brand-b);
+  font-weight: 600;
+}
+
+.nav-spacer { flex: 1; }
+
+.nav-avatar {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--grad);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 12px; font-weight: 700;
+  cursor: pointer; border: 2px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 0 0 2px rgba(95, 54, 158, 0.2);
+}

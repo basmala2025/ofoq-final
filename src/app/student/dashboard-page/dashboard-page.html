@@ -1,15 +1,13 @@
 <app-navbar></app-navbar>
 
 <div class="container">
-  <!-- Banner -->
   <div class="welcome-banner">
     <div class="banner-text">
       <h1>Welcome Back!</h1>
-      <p>You have <strong>{{ stats.available }}</strong> exams waiting for you. Good luck!</p>
+      <p>You have <strong>{{ stats.available }}</strong> active exams waiting for you. Good luck!</p>
     </div>
   </div>
 
-  <!-- Stats Grid -->
   <div class="stats-grid">
     <div class="stat-card">
       <div class="stat-card-header"><span>Active Exams</span><i class="fas fa-book-open"></i></div>
@@ -31,30 +29,59 @@
       <p>⏳ Loading your workspace...</p>
     </div>
   } @else {
-    <!-- 1. Active Exams (Based on Enrolled Courses) -->
     <div class="exams-section">
-      <h2>Your Active Exams</h2>
-      <div class="exam-grid">
+      <h2>Your Registered Courses</h2>
+     <div class="exam-grid">
         @for(course of myCourses; track course.courseId) {
-          <div class="exam-card">
+          <div class="exam-card" [class.live-exam-card]="course.exam">
             <div class="exam-header">
-              <div class="exam-info">
+              <div class="exam-info" style="width: 100%;">
+
                 <div class="exam-tags">
                   <span class="tag tag-course">{{ course.code }}</span>
-                  <span class="tag tag-time"><i class="far fa-clock"></i> 60 min</span>
+
+                  @if(course.exam) {
+                    <span class="tag tag-live-pulse">
+                      <span class="pulse-dot"></span> LIVE ASSESSMENT
+                    </span>
+                    <span class="tag tag-time"><i class="far fa-clock"></i> {{ course.exam.durationMinutes }} min</span>
+                  } @else {
+                    <span class="tag tag-idle">✨ Active Course</span>
+                  }
                 </div>
-                <div class="exam-title">Final Assessment - {{ course.title }}</div>
+
+                <div class="exam-title" style="margin-top: 8px;">{{ course.title }}</div>
+                <p style="font-size: 0.85rem; color: #64748b; margin-top: 5px;">{{ course.description }}</p>
+
+                @if(course.exam) {
+                  <div class="live-exam-alert-box" style="background: rgba(244, 117, 69, 0.1); border-left: 4px solid #f47545; padding: 10px; border-radius: 4px; margin-top: 10px;">
+                    <p style="margin: 0; color: #2b2d42; font-size: 0.9rem;">
+                      ⚠️ <strong>امتحان فعال الآن:</strong> {{ course.exam.title }}
+                    </p>
+                  </div>
+                }
               </div>
-              <button class="btn btn-primary" (click)="startExam(course.courseId)">Start Exam</button>
+
+              <div class="exam-action-zone" style="margin-top: 15px; width: 100%; text-align: right;">
+                @if(course.exam) {
+                  <button class="btn btn-primary btn-live-trigger" (click)="startExam(course.exam.examId)">
+                    Launch Exam <i class="fas fa-rocket" style="margin-left: 5px;"></i>
+                  </button>
+                } @else {
+                  <button class="btn btn-secondary" style="background: #cbd5e1; color: #64748b; cursor: not-allowed;" disabled>
+                    No Scheduled Exams
+                  </button>
+                }
+              </div>
+
             </div>
           </div>
         } @empty {
-          <p class="empty-msg" style="color: #64748b;">No active exams. Please enroll in a course first.</p>
+          <p class="empty-msg" style="color: #64748b;">No registered courses. Please explore and enroll in a course below.</p>
         }
       </div>
     </div>
 
-    <!-- 2. Explore & Enroll Section -->
     <div class="exams-section" style="margin-top: 3rem; border-top: 2px dashed #e2e8f0; padding-top: 2rem;">
       <h2>Explore Available Courses</h2>
       <div class="exam-grid">
@@ -77,10 +104,10 @@
       </div>
     </div>
   }
-
+</div>
 
 <button class="logout-floating-btn" (click)="logout()" title="Logout">
-  <i class="fas fa-sign-out-alt">Log Out</i>
+  <i class="fas fa-sign-out-alt"> Log Out</i>
 </button>
 
 <p class="copyright">© 2026 OFOQ System - BFCAI. All rights reserved.</p>

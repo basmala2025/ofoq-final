@@ -325,3 +325,44 @@
     .profile-gradient { background: linear-gradient(135deg, #f47545 0%, #5f369e 100%); }
     .btn-gradient { background: linear-gradient(135deg, #f47545 0%, #5f369e 100%); color: white; }
     .shadow-large { box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.08); }
+/* مثال للتنسيق الجديد في ملف dashboard-ta.css */
+.simple-dashboard-container {
+  background-color: #f8fafc;
+  min-height: 100vh;
+  padding-bottom: 60px;
+}
+
+.main-header-bar {
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 16px 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.simple-viewport {
+  max-width: 1200px;
+  margin: 40px auto 0;
+  padding: 0 24px;
+}
+
+.welcome-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 40px;
+}
+
+.total-students-badge {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  padding: 10px 20px;
+  border-radius: 30px;
+  font-size: 14px;
+  color: #334155;
+}
+.total-students-badge strong {
+  color: #5f369e;
+  font-size: 16px;
+}

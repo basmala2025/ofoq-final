@@ -1,34 +1,54 @@
-import { Component, signal } from '@angular/core';
+// src/app/features/ta-dashboard/pages/dashboard-ta/dashboard-ta.component.ts
+
+import { Component, signal, computed, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
+import { TaApiService } from '../services/ta-api.service'; // تأكدي من مسار السيرفيس
 
 @Component({
   selector: 'app-dashboard-ta',
   standalone: true,
   imports: [CommonModule],
-  templateUrl:'dashboard-ta.html',
-  styleUrl:'dashboard-ta.css',
+  templateUrl: 'dashboard-ta.html',
+  styleUrl: 'dashboard-ta.css',
 })
-export class App {
-  // State Signals
-  activeTab = signal('dashboard');
+export class TaDashboardComponent implements OnInit {
+  private router = inject(Router);
+  private taApiService = inject(TaApiService);
 
-  // Mock Data
-  tutorName = signal('Ahmed');
+  // السيرفر بيرجع الاسم حقيقي دلوقتي، وبنخليه داييناميك
+  tutorName = signal<string>('Loading...');
 
-  stats = signal({
-    upcoming: 3,
-    running: 1,
-    attendance: 85
+  // الـ Signal الأساسي للمواد
+  courses = signal<any[]>([]);
+
+  // الـ Computed المظبوط بتاعك هيفضل شغال زي الساعة ويحسب المجموع لايف
+  totalGlobalStudents = computed(() => {
+    return this.courses().reduce((sum, course) => sum + course.students, 0);
   });
 
-  courses = signal([
-    { id: 1, code: 'CS201', title: 'Data Structures & Algorithms', students: 120 },
-    { id: 2, code: 'CS105', title: 'Intro to Web Development', students: 95 },
-    { id: 3, code: 'AI301', title: 'AI Fundamentals', students: 80 }
-  ]);
+  ngOnInit(): void {
+    this.loadDashboardData();
+  }
 
-  // Methods
-  switchTab(tabId: string) {
-    this.activeTab.set(tabId);
+  private loadDashboardData(): void {
+    this.taApiService.getDashboard().subscribe({
+      next: (res: any) => {
+        this.tutorName.set(res.tutorName);
+        this.courses.set(res.courses); // هيملا المصفوفة بالـ 6 مواد اللي راجعين من الـ Swagger
+      },
+      error: (err) => {
+        console.error('Failed to fetch dashboard data', err);
+        this.tutorName.set('Error Loading Profile');
+      }
+    });
+  }
+
+ onOpenCourseDashboard(courseId: string): void {
+  this.router.navigate(['/ta-dashboard/course', courseId]);
+ }
+  onDirectLogout(): void {
+    localStorage.clear();
+    this.router.navigate(['/login']);
   }
 }

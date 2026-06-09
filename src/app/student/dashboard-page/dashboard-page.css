@@ -1,385 +1,310 @@
-/* General Layout */
+/* ==========================================
+   🌐 OFOQ Ultimate Premium UI (BFCAI 2026)
+   ========================================== */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --bg-core: #070714;
+  --bg-gradient: linear-gradient(180deg, #070714 0%, #0b0b1e 100%);
+  --bg-card: #13132a;
+  --border-glow: #222244;
+  --text-pure: #ffffff;
+  --text-secondary: #94a3b8;
+  --ofoq-purple: #8b5cf6;
+  --ofoq-pink: #d946ef;
+  --ofoq-sunset: #f97316;
+  --live-red: #ef4444;
+  --live-glow: rgba(239, 68, 68, 0.2);
+}
+
+/* 🚨 إجبار المتصفح على قلب الخلفية بالكامل لمنع اللون الأبيض 🚨 */
+html, body {
+  background: var(--bg-gradient) !important;
+  background-color: var(--bg-core) !important;
+  color: var(--text-pure) !important;
+  font-family: 'Inter', sans-serif;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+}
+
 .container {
   max-width: 1200px;
-  margin: 100px auto 40px; /* ترك مسافة للنافبار الثابت */
-  padding: 0 20px;
+  margin: 0 auto;
+  padding: 3rem 2rem;
 }
 
-.logo-section {
-  text-align: center;
-  margin-bottom: 20px;
-}
-
-.dashboard-logo {
-  width: 120px;
-  filter: drop-shadow(0 2px 5px rgba(0,0,0,0.05));
-}
-
-/* Welcome Banner */
+/* ==========================================
+   🌅 تدرجات أفق الحقيقية في البانر (OFOQ Banner)
+   ========================================== */
 .welcome-banner {
-  background: linear-gradient(135deg, #f47545 0%, #5f369e 100%);
-  color: white;
-  padding: 40px;
-  border-radius: 20px;
-  margin-bottom: 30px;
-  box-shadow: 0 10px 20px rgba(95, 54, 158, 0.1);
+  background: linear-gradient(135deg, #1e1b4b 0%, #4c1d95 40%, #2563eb 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
+  padding: 3rem;
+  margin-bottom: 2.5rem;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  position: relative;
 }
 
-.welcome-banner h1 {
-  font-size: 2rem;
-  margin-bottom: 10px;
+/* تدرج نص الترحيب اللامع */
+.banner-text h1 {
+  font-size: 2.5rem;
+  font-weight: 800;
+  margin: 0 0 0.75rem 0;
+  color: #ffffff !important;
+  letter-spacing: -0.03em;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
 }
 
-/* Stats Cards */
+.banner-text p {
+  color: #e2e8f0 !important; /* تفتيح النص عشان يظهر بوضوح */
+  font-size: 1.15rem;
+  margin: 0;
+  font-weight: 500;
+}
+
+.banner-text strong {
+  color: #ffee55 !important; /* لون ذهبي دافئ للرقم لجذب الانتباه */
+  font-weight: 800;
+  background: none;
+  -webkit-text-fill-color: initial;
+}
+
+/* ==========================================
+   📊 الـ Stats الكريستالية النظيفة
+   ========================================== */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 20px;
-  margin-bottom: 40px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 4rem;
 }
 
 .stat-card {
-  background: #ffffff;
-  padding: 25px;
-  border-radius: 15px;
-  border: 1px solid #f0f0f0;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
-  transition: transform 0.3s ease;
-}
-
-.stat-card:hover {
-  transform: translateY(-5px);
+  background: var(--bg-card);
+  border: 1px solid var(--border-glow);
+  border-radius: 20px;
+  padding: 1.75rem;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
 }
 
 .stat-card-header {
   display: flex;
   justify-content: space-between;
-  color: #6B7280;
-  font-weight: 500;
-  margin-bottom: 15px;
+  align-items: center;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .stat-card-header i {
-  color: #5f369e;
-  font-size: 1.2rem;
+  color: var(--ofoq-purple);
+  font-size: 1.25rem;
 }
 
+/* الأرقام منورة بلون أبيض صريح */
 .stat-value {
-  font-size: 2.2rem;
-  font-weight: 700;
-  color: #111827;
+  font-size: 2.5rem;
+  font-weight: 800;
+  margin-top: 1rem;
+  color: #ffffff !important;
+  letter-spacing: -0.02em;
 }
 
-/* Exams Section */
+/* ==========================================
+   🗂️ العناوين والكروت المحدثة
+   ========================================== */
 .exams-section h2 {
-  font-size: 1.5rem;
-  margin-bottom: 20px;
-  color: #111827;
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin-bottom: 2rem;
+  letter-spacing: -0.02em;
+}
+
+.exam-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 2rem;
 }
 
 .exam-card {
-  background: #ffffff;
-  border: 1px solid #eee;
-  border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 15px;
-  transition: all 0.3s ease;
-}
-
-.exam-card:hover {
-  border-color: #f47545;
-  box-shadow: 0 5px 15px rgba(244, 117, 69, 0.05);
-}
-
-.exam-header {
+  background: var(--bg-card);
+  border: 1px solid var(--border-glow);
+  border-radius: 22px;
+  padding: 2rem;
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
   display: flex;
+  flex-direction: column;
   justify-content: space-between;
-  align-items: center;
 }
 
+/* الكارت الحي الحاسم للنظر */
+.exam-card.live-exam-card {
+  border: 1px solid var(--live-red) !important;
+  background: linear-gradient(145deg, var(--bg-card) 0%, #1a080d 100%) !important;
+  box-shadow: 0 0 30px var(--live-glow) !important;
+}
+
+/* تفتيح عنوان المادة عشان يظهر بقوة */
+.exam-title {
+  color: #ffffff !important;
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin-top: 0.75rem;
+}
+
+.exam-info p {
+  color: var(--text-secondary) !important;
+  font-size: 0.95rem;
+  margin-top: 0.5rem;
+}
+
+/* ==========================================
+   🏷️ الـ Badges المنورة والـ Pulse
+   ========================================== */
 .exam-tags {
   display: flex;
-  gap: 10px;
-  margin-bottom: 10px;
+  gap: 0.5rem;
 }
 
 .tag {
-  font-size: 0.8rem;
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-weight: 600;
-}
-
-.tag-course { background: #f3f0ff; color: #5f369e; }
-.tag-time { background: #fff7ed; color: #f47545; }
-
-.exam-title {
-  font-size: 1.1rem;
+  font-size: 0.75rem;
   font-weight: 700;
+  padding: 0.4rem 0.8rem;
+  border-radius: 10px;
 }
 
-/* Logout Floating Button (المطلوب) */
-.logout-floating-btn {
-  position: fixed;
-  bottom: 30px;
-  right: 30px;
-  width: 55px;
-  height: 55px;
-  background: white;
-  color: #ef4444; /* أحمر للتنبيه */
-  border: none;
+.tag-course {
+  background: rgba(139, 92, 246, 0.15);
+  color: #c084fc;
+  border: 1px solid rgba(139, 92, 246, 0.3);
+}
+
+.tag-live-pulse {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--live-red);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pulse-dot {
+  width: 6px;
+  height: 6px;
+  background-color: var(--live-red);
   border-radius: 50%;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  animation: ofoqPulse 1.2s infinite ease-in-out;
+}
+
+@keyframes ofoqPulse {
+  0% { transform: scale(0.8); opacity: 0.5; }
+  50% { transform: scale(1.4); opacity: 1; box-shadow: 0 0 8px var(--live-red); }
+  100% { transform: scale(0.8); opacity: 0.5; }
+}
+
+.tag-idle {
+  background: rgba(16, 185, 129, 0.1);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.tag-time {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary);
+}
+
+/* ⚠️ بوكس التحذير الناري الظاهر */
+.live-exam-alert-box {
+  background: rgba(239, 68, 68, 0.07);
+  border-left: 4px solid var(--live-red);
+  padding: 1rem;
+  border-radius: 8px;
+  margin-top: 1.5rem;
+}
+
+.live-exam-alert-box p {
+  font-size: 0.85rem;
+  color: #fca5a5 !important;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* ==========================================
+   🚀 الـ Buttons المضيئة (Buttons & Actions)
+   ========================================== */
+.exam-action-zone {
+  margin-top: 2rem;
+}
+
+.btn {
+  width: 100%;
+  font-size: 0.95rem;
+  font-weight: 700;
+  padding: 0.85rem;
+  border-radius: 12px;
+  border: none;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
-  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+/* زرار Launch الـ Premium المضيء بتدرج ناري */
+.btn-primary.btn-live-trigger {
+  background: linear-gradient(135deg, #ef4444 0%, #ec4899 100%) !important; /* تدرج أفق الناري */
+  color: #ffffff !important;
+  box-shadow: 0 8px 20px rgba(239, 68, 68, 0.4);
+}
+
+.btn-primary.btn-live-trigger:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 25px rgba(239, 68, 68, 0.6);
+  filter: brightness(1.1);
+}
+
+/* زرار مقفول شيك ومتناسق مع الخلفية */
+.btn-secondary {
+  background: #1e1e38 !important;
+  color: #475569 !important;
+  border: 1px solid #2a2a4a !important;
+  cursor: not-allowed;
+}
+
+/* ==========================================
+   🚪 الـ Floating Logout & Copyright
+   ========================================== */
+.logout-floating-btn {
+  position: fixed;
+  bottom: 2.5rem;
+  right: 2.5rem;
+  background: #1a1a3a;
+  border: 1px solid var(--border-glow);
+  color: #ffffff;
+  padding: 0.9rem 1.75rem;
+  border-radius: 50px;
+  font-weight: 700;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  cursor: pointer;
   z-index: 1000;
-    width: 75px;
-            height: 75px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #f47545 0%, #5f369e 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 600;
-            font-size: 1.1rem;
+  transition: all 0.2s ease;
 }
 
 .logout-floating-btn:hover {
-  transform: scale(1.1) rotate(-10deg);
-}
-
-.btn-primary {
-  background: #f47545;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: 0.3s;
+  background: var(--live-red);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(239, 68, 68, 0.4);
 }
 
 .copyright {
   text-align: center;
-  color: #9CA3AF;
-  font-size: 0.9rem;
-  margin-top: 40px;
-  padding-bottom: 20px;
-}
- .profile-icon {
-            width: 42px;
-            height: 42px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #f47545 0%, #5f369e 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 600;
-            font-size: 1.1rem;
-        }
-/* Base & Layout */
-.dashboard-container {
-  padding: 2rem;
-  max-width: 1200px;
-  margin: 0 auto;
-  font-family: 'Inter', 'Segoe UI', sans-serif;
-  direction: ltr; /* Changed to LTR for English */
-  background-color: #f8fafc; /* Sleek, cool gray background */
-  min-height: 100vh;
-}
-
-/* Header */
-.dashboard-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2.5rem;
-}
-
-.welcome-text h1 {
-  font-size: 2.2rem;
-  color: #0f172a;
-  margin: 0 0 0.4rem 0;
-  font-weight: 700;
-}
-
-.welcome-text p {
-  color: #64748b;
-  margin: 0;
-  font-size: 1.1rem;
-}
-
-.logout-btn {
-  background-color: transparent;
-  color: #ef4444;
-  border: 1px solid #ef4444;
-  padding: 0.7rem 1.5rem;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: all 0.2s ease;
-}
-
-.logout-btn:hover {
-  background-color: #ef4444;
-  color: white;
-}
-
-/* Statistics Grid */
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 3.5rem;
-}
-
-.stat-card {
-  background: white;
-  padding: 1.5rem;
-  border-radius: 12px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-  text-align: center;
-  border: 1px solid #e2e8f0;
-}
-
-.stat-card h3 {
-  font-size: 2.5rem;
-  color: #1e293b;
-  margin: 0 0 0.5rem 0;
-  font-weight: 700;
-}
-
-.stat-card p {
-  color: #64748b;
-  margin: 0;
-  font-weight: 500;
-}
-
-.stat-card.highlight h3 {
-  color: #2563eb; /* OFOQ Primary Blue */
-}
-
-/* Sections */
-.courses-section {
-  margin-bottom: 4rem;
-}
-
-.explore-section {
-  padding-top: 2rem;
-  border-top: 2px dashed #cbd5e1;
-}
-
-.section-title {
-  margin-bottom: 1.5rem;
-}
-
-.section-title h2 {
-  color: #0f172a;
-  font-size: 1.5rem;
-  margin: 0;
-  font-weight: 700;
-}
-
-.subtitle {
-  color: #64748b;
-  margin-top: 0.4rem;
-  font-size: 0.95rem;
-}
-
-/* Course Cards */
-.courses-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 1.5rem;
-}
-
-.course-card {
-  background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-  display: flex;
-  flex-direction: column;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  border: 1px solid #e2e8f0;
-}
-
-.course-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-}
-
-.card-icon {
-  font-size: 2.2rem;
-  margin-bottom: 1rem;
-}
-
-.card-content {
-  flex-grow: 1;
-}
-
-.card-content h3 {
-  margin: 0 0 0.5rem 0;
-  color: #1e293b;
-  font-size: 1.25rem;
-  font-weight: 600;
-}
-
-.card-content p {
-  color: #64748b;
-  font-size: 0.95rem;
-  line-height: 1.5;
-  margin-bottom: 1.5rem;
-}
-
-/* Buttons */
-.primary-btn {
-  width: 100%;
-  background-color: #2563eb; /* Access Course - Blue */
-  color: white;
-  border: none;
-  padding: 0.8rem;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 1rem;
-  transition: background 0.2s ease;
-}
-
-.primary-btn:hover {
-  background-color: #1d4ed8;
-}
-
-.enroll-btn {
-  width: 100%;
-  background-color: #5f369e; /* Enroll - Green accent */
-  color: white;
-  border: none;
-  padding: 0.8rem;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 1rem;
-  transition: background 0.2s ease;
-}
-
-.enroll-btn:hover {
-  background-color: #059669;
-}
-
-/* Loading & Empty States */
-.loading-state, .empty-state {
-  text-align: center;
-  padding: 3rem;
-  background: white;
-  border-radius: 12px;
-  color: #64748b;
-  font-size: 1.1rem;
-  border: 1px dashed #cbd5e1;
+  color: #334155;
+  font-size: 0.8rem;
+  margin-top: 6rem;
 }

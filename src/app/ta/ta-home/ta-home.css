@@ -1,0 +1,248 @@
+/* src/app/features/ta-dashboard/pages/ta-home/ta-home.css */
+
+:host {
+  display: block;
+  background-color: #f8fafc; /* الأرضية الفاتحة المريحة لأفق */
+  min-height: 100vh;
+  font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+.dashboard-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 40px 24px;
+}
+
+/* Header Layout & Alignment */
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 48px;
+  gap: 32px;
+}
+
+.header-left {
+  flex: 1;
+}
+
+.date-badge {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: #64748b;
+  margin-bottom: 12px;
+}
+
+h1 {
+  font-size: 38px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 8px 0;
+  letter-spacing: -0.5px;
+}
+
+.ta-highlight {
+  color: #5f369e; /* لون أفق البنفسجي المميز */
+}
+
+.sub-headline {
+  font-size: 26px;
+  font-weight: 700;
+  color: #334155;
+  margin: 0 0 12px 0;
+}
+
+.caption-text {
+  font-size: 14px;
+  color: #64748b;
+  margin: 0;
+}
+
+/* Top Quick Stats Metrics Component */
+.metrics-row {
+  display: flex;
+  gap: 16px;
+}
+
+.metric-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 20px 28px;
+  min-width: 100px;
+  text-align: center;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.metric-num {
+  font-size: 32px;
+  font-weight: 800;
+  color: #5f369e;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+
+.metric-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Dynamic Courses Grid Blueprint */
+.courses-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 24px;
+}
+
+/* Course Main Card Architecture */
+.course-main-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.course-main-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 20px -8px rgba(95, 54, 158, 0.15);
+}
+
+/* Top Accent Bars Color Mapping */
+.card-accent-bar {
+  height: 6px;
+  width: 100%;
+}
+.banner-1 { background: linear-gradient(90deg, #f47545, #ff9f79); }
+.banner-2 { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
+.banner-3 { background: linear-gradient(90deg, #10b981, #34d399); }
+.banner-4 { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+.banner-5 { background: linear-gradient(90deg, #6366f1, #818cf8); }
+
+.card-body-content {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.course-code-tag {
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 4px 8px;
+  border-radius: 6px;
+  width: fit-content;
+  margin-bottom: 14px;
+}
+
+.course-title-text {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 18px 0;
+  line-height: 1.4;
+  flex: 1; /* يضمن توازن الكروت وتساوي أحجامها حتى لو النص طويل */
+}
+
+.card-meta-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 14px;
+  border-top: 1px solid #f1f5f9;
+  margin-bottom: 16px;
+}
+
+.status-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+  text-transform: uppercase;
+}
+
+.status-badge.active { background-color: #dcfce7; color: #15803d; }
+.status-badge.grading { background-color: #fef3c7; color: #b45309; }
+.status-badge.archived { background-color: #f1f5f9; color: #64748b; }
+.status-badge.review { background-color: #e0e7ff; color: #4338ca; }
+
+.student-count-indicator {
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+}
+
+/* Smooth Interactive Enter Button */
+.enter-course-trigger {
+  width: 100%;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+  padding: 10px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+
+.enter-course-trigger:hover {
+  background: #5f369e;
+  border-color: #5f369e;
+  color: #ffffff;
+}
+
+.arrow-icon {
+  transition: transform 0.15s ease;
+}
+.enter-course-trigger:hover .arrow-icon {
+  transform: translateX(3px);
+}
+
+/* Empty & Loading Containers Styling */
+.empty-state-box, .loading-spinner-box {
+  background: #ffffff;
+  border: 2px dashed #cbd5e1;
+  border-radius: 16px;
+  padding: 60px;
+  text-align: center;
+  grid-column: 1 / -1;
+}
+
+.empty-message {
+  font-size: 15px;
+  color: #64748b;
+  margin: 0;
+}
+
+@media (max-width: 768px) {
+  .dashboard-header {
+    flex-direction: column;
+    align-items: fill;
+  }
+  .metrics-row {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .metric-card {
+    flex: 1;
+  }
+}

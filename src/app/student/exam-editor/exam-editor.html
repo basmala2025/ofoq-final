@@ -1,5 +1,6 @@
-<div class="exam-wrapper" [class.panic-blur]="isPanicMode" (click)="enterFullScreen()">
+<div class="exam-wrapper" [class.panic-blur]="isLoading" (click)="enterFullScreen()">
 
+  <!-- Security Overlay Notification Framework -->
   <div class="security-toast" *ngIf="showSecurityToast"
        [class.alarm-red]="isRedAlarm" [class.warning-yellow]="!isRedAlarm">
     <div class="toast-icon">
@@ -12,16 +13,17 @@
     <div class="violation-count" *ngIf="isRedAlarm">{{ violationCount }}/3</div>
   </div>
 
+  <!-- Header Branding and Time Management Nodes -->
   <header class="exam-header">
     <div class="brand">
       <div class="title-group">
         <h1>Technical Assessment</h1>
-        <span class="status-tag"><mat-icon>security</mat-icon> Secure Environment</span>
+        <span class="status-tag"><mat-icon>security</mat-icon> Secure Environment Active</span>
       </div>
     </div>
 
     <div class="header-tools">
-      <div class="timer-box" [class.urgent]="timeRemaining < 300">
+      <div class="timer-box" [class.urgent]="violationCount >= 2">
         <mat-icon>schedule</mat-icon>
         <span class="timer-val">{{ timerDisplay }}</span>
       </div>
@@ -31,25 +33,51 @@
     </div>
   </header>
 
+  <!-- Central Workspace Management Assembly -->
   <main class="dashboard-body">
 
+    <!-- Assessment Metadata and Security Tracking Sidebar Panel -->
     <aside class="side-panel">
       <section class="panel-section">
-        <h3><mat-icon>description</mat-icon> Problem Description</h3>
-        <div class="problem-text">
-          <p>Find the maximum depth of a binary tree. The maximum depth is the number of nodes along the longest path from the root node down to the farthest leaf node.</p>
-        </div>
+        <h3><mat-icon>description</mat-icon> {{ problemTitle }}</h3>
+        <!-- Fixed: Data bound directly as formatted text to preserve backend whitespaces seamlessly -->
+        <div class="problem-text" style="white-space: pre-line;">{{ problemDescription }}</div>
       </section>
+<div class="problem-description">
+  <p>{{ problemDescription }}</p>
+</div>
 
+<div class="test-cases-section" style="margin-top: 20px;">
+  <h3 style="color: #cbd5e1; font-size: 1rem; margin-bottom: 10px;">Public Test Cases</h3>
+
+  @for (testCase of publicTestCases; track $index) {
+    <div class="test-case-card" style="background: #1e293b; border: 1px solid #334155; padding: 12px; border-radius: 6px; margin-bottom: 10px;">
+      <span style="color: #f47545; font-weight: bold; font-size: 0.85rem;">Case #{{ $index + 1 }}</span>
+
+      <div style="margin-top: 5px;">
+        <strong style="color: #94a3b8; font-size: 0.8rem;">Input:</strong>
+        <pre style="background: #0f172a; color: #38bdf8; padding: 6px; border-radius: 4px; margin: 3px 0; font-family: monospace; font-size: 0.85rem;">{{ testCase.input }}</pre>
+      </div>
+
+      <div style="margin-top: 5px;">
+        <strong style="color: #94a3b8; font-size: 0.8rem;">Expected Output:</strong>
+        <pre style="background: #0f172a; color: #4ade80; padding: 6px; border-radius: 4px; margin: 3px 0; font-family: monospace; font-size: 0.85rem;">{{ testCase.expectedOutput }}</pre>
+      </div>
+    </div>
+  } @empty {
+    <p style="color: #64748b; font-size: 0.85rem;">No public test cases available for this exam.</p>
+  }
+</div>
       <section class="panel-section rules-section">
-        <h3><mat-icon>gavel</mat-icon> Security Rules</h3>
+        <h3><mat-icon>gavel</mat-icon> Security Protocol Parameters</h3>
         <ul class="rules-list">
-          <li><mat-icon>center_focus_strong</mat-icon> Keep eyes on screen <span>(Strict Tracking)</span></li>
-          <li><mat-icon>tab</mat-icon> No tab switching <span>(Immediate Alarm)</span></li>
-          <li><mat-icon>content_copy</mat-icon> Copy/Paste disabled <span>(Warning)</span></li>
+          <li><mat-icon>center_focus_strong</mat-icon> Eye Alignment Capture <span>(Gaze Verification)</span></li>
+          <li><mat-icon>tab</mat-icon> Sandbox View Stability <span>(Tab Lock Policy)</span></li>
+          <li><mat-icon>content_copy</mat-icon> Content Buffer Disengaged <span>(Clipboard Guard)</span></li>
         </ul>
+
         <div class="alarm-tracker">
-          <label>Critical Alarms</label>
+          <label>Critical Anomaly Meters</label>
           <div class="progress-bar">
             <div class="progress-fill" [style.width.%]="(violationCount/3)*100" [class.danger]="violationCount >= 2"></div>
           </div>
@@ -58,6 +86,7 @@
       </section>
     </aside>
 
+    <!-- Coding Panel Housing Monaco and Sandbox Terminal Logs -->
     <section class="editor-panel">
       <div class="editor-container-wrapper">
         <div #editorContainer class="monaco-instance"></div>
@@ -65,37 +94,31 @@
 
       <div class="console-wrapper">
         <div class="console-header">
-          <span><mat-icon>terminal</mat-icon> System Output</span>
+          <span><mat-icon>terminal</mat-icon> Sandboxed Compiler Console</span>
         </div>
         <div class="console-body">
-          <pre>{{ output }}</pre>
+          <pre>{{ consoleOutput }}</pre>
+          <p *ngIf="compileMessage" style="color: #ef4444; font-size: 0.85rem; margin-top: 5px;">{{ compileMessage }}</p>
         </div>
       </div>
     </section>
   </main>
 
+  <!-- Proctored Vision Widget Framework -->
   <div class="camera-widget" [class.alarm-glow]="isRedAlarm">
     <div class="video-container">
-      <video #videoElement autoplay [muted]="true" playsinline></video>
       <div class="ai-overlay">
-        <div class="ai-badge" [class.active]="cvActive">
-          <span class="dot"></span> AI LIVE
+        <div class="ai-badge" [class.active]="true">
+          <span class="dot"></span> REALTIME PROCTOR CORE RUNNING
         </div>
       </div>
     </div>
   </div>
 
+  <!-- Workspace Control Trigger Matrix -->
   <div class="editor-actions">
-    <button class="run-btn" (click)="runCode()">
-      <mat-icon>play_arrow</mat-icon> Run Code
-    </button>
-
-    <!-- <button (click)="testSingleAudio()" style="background: #ff9800; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
-      <mat-icon style="font-size: 18px; vertical-align: middle;">mic</mat-icon> Test Audio (5s)
-    </button> -->
-
-    <button (click)="triggerViolentAlarm('TEST: Cheating attempt detected!')" style="background: #dc3545; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
-      <mat-icon style="font-size: 18px; vertical-align: middle;">warning</mat-icon> Trigger Alarm
+    <button class="run-btn" (click)="runCode()" [disabled]="isLoading">
+      <mat-icon>play_arrow</mat-icon> {{ isLoading ? 'Compiling Context...' : 'Run Code' }}
     </button>
 
     <button class="finish-btn" (click)="submitSolution()">

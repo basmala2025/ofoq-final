@@ -1,0 +1,250 @@
+<div class="builder-container">
+  <button class="back-btn" (click)="onCancel()">← Cancel &amp; Exit</button>
+
+  <div class="section-divider">
+    <div class="section-label"><span class="label-num">4</span> Judge Exam Builder</div>
+    <div class="section-divider-line"></div>
+  </div>
+
+  <div class="builder-layout">
+
+    <div class="builder-main">
+
+      <div class="form-card" style="border: 1px dashed #5f369e; background: #faf8ff; margin-bottom: 20px;">
+        <div class="card-title" style="color: #5f369e; border-bottom: 1px solid #e9e3ff; font-weight: 800;">
+           Generate Assessment via AI
+        </div>
+        <div class="form-group">
+          <label style="color: #5f369e; font-weight: 700;">Describe the problem you want to build</label>
+          <textarea
+            class="form-textarea"
+            style="width: 98%; min-height: 75px; border-color: #d8c7ff;"
+            placeholder="e.g., Write a C++ program that takes an array of numbers and returns the second largest element. Include edge cases for arrays with identical elements."
+            [ngModel]="aiPrompt()"
+            (ngModelChange)="aiPrompt.set($event)"
+            [disabled]="isAiGenerating()">
+          </textarea>
+        </div>
+        <button
+          class="btn-validate-outline"
+          style="margin-top: 4px; background: #5f369e; color: #fff; width: 100%; transition: all 0.2s;"
+          [disabled]="isAiGenerating() || !aiPrompt().trim()"
+          (click)="onGenerateWithAI()">
+          {{ isAiGenerating() ? '⏳ Prompting Model & Synthesizing Test Cases...' : 'Generate Coding Blueprint & Constraints' }}
+        </button>
+      </div>
+
+      <div class="form-card" style="margin-bottom: 20px;">
+        <div class="card-title">Problem Statement</div>
+        <div class="form-group">
+          <label>Exam Assessment Title</label>
+          <input class="form-input" type="text" placeholder="e.g., Array Sum Optimization" style="width: 98%;"
+                 [ngModel]="examTitle()" (ngModelChange)="examTitle.set($event)" />
+        </div>
+        <div class="form-group">
+          <label>Problem Description &amp; Instructions</label>
+          <textarea class="form-textarea" placeholder="Write down the problem guidelines, example inputs, outputs and edge cases clearly..."
+                    style="width: 98%;" [ngModel]="examDescription()" (ngModelChange)="examDescription.set($event)"></textarea>
+        </div>
+      </div>
+
+      <div class="form-card" style="margin-bottom: 20px;">
+        <div class="card-title">Exam Session Configuration</div>
+        <div class="constraint-grid">
+          <div class="form-group">
+            <label>Window Availability Start</label>
+            <input class="form-input" type="datetime-local"
+                   [ngModel]="windowStart()" (ngModelChange)="windowStart.set($event)" />
+          </div>
+          <div class="form-group">
+            <label>Window Availability End</label>
+            <input class="form-input" type="datetime-local"
+                   [ngModel]="windowEnd()" (ngModelChange)="windowEnd.set($event)" />
+          </div>
+        </div>
+        <div class="constraint-grid" style="margin-top: 14px;">
+          <div class="form-group">
+            <label>Duration Limit</label>
+            <div class="addon-wrap">
+              <input class="form-input" type="number" [ngModel]="durationMinutes()" (ngModelChange)="durationMinutes.set($event)" />
+              <div class="addon-text">Minutes</div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Total Evaluation Points</label>
+            <div class="addon-wrap">
+              <input class="form-input" type="number" [ngModel]="totalPoints()" (ngModelChange)="totalPoints.set($event)" />
+              <div class="addon-text">Points</div>
+            </div>
+          </div>
+        </div>
+        <div class="form-group" style="margin-top: 14px;">
+          <label>Assessment Delivery Mode</label>
+          <select class="form-select" [ngModel]="examType()" (ngModelChange)="examType.set($event)">
+            <option value="PRACTICAL">PRACTICAL (Standard Lab Assessment)</option>
+            <option value="THEORETICAL">THEORETICAL (Written / Lecture Assessment)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-card" style="margin-bottom: 20px;">
+        <div class="card-title">Reference Solution Code Blueprint</div>
+        <div class="form-group">
+          <label>Model Answer Solution Code</label>
+          <textarea class="form-textarea code-area" style="width: 98%; min-height: 180px;"
+                    placeholder="Provide the trusted model solution script for compiling baseline outputs..."
+                    [ngModel]="referenceSolution()" (ngModelChange)="referenceSolution.set($event)"></textarea>
+        </div>
+        <button class="btn-validate-outline" [disabled]="isValidating() || totalCases() === 0" (click)="onValidateModelAnswer()">
+          {{ isValidating() ? ' Running Sandbox Verifications...' : '⚙️ Run & Validate Model Answer' }}
+        </button>
+      </div>
+
+      <div *ngIf="validationResult()" class="form-card" style="border-left: 4px solid #10b981; margin-bottom: 20px;">
+        <div class="card-title"> Sandbox Compilation Feed</div>
+        <div style="font-size: 13px; color: #475569; margin-bottom: 16px; font-weight: 600;">
+          Status Message: <span style="color: #0f172a;">{{ validationResult()?.message }}</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          @for (result of validationResult()?.results; track result.index) {
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px;">
+              <span style="font-size: 13px; font-weight: 700; color: #334155;">Test Case Node #{{ result.index }}</span>
+              <span class="badge" [ngClass]="result.passed ? 'badge-success' : 'badge-danger'">
+                {{ result.status }}
+              </span>
+            </div>
+          }
+        </div>
+      </div>
+
+      <div class="form-card" style="margin-bottom: 20px;">
+        <div class="card-title">Judge0 Sandbox Constraints</div>
+        <div class="constraint-grid">
+          <div class="form-group">
+            <label>Execution Time Limit</label>
+            <div class="addon-wrap">
+<input class="form-input" type="number" [ngModel]="timeLimit()" (ngModelChange)="timeLimit.set($event)" />              <div class="addon-text">sec</div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Sandbox Memory Limit</label>
+            <div class="addon-wrap">
+              <input class="form-input" type="number" [ngModel]="memoryLimit()" (ngModelChange)="memoryLimit.set($event)" />
+              <div class="addon-text">MB</div>
+            </div>
+          </div>
+        </div>
+        <div class="constraint-grid" style="margin-top: 14px;">
+          <div class="form-group">
+            <label>Target Sandbox Compiler Environment</label>
+            <select class="form-select" [ngModel]="selectedLanguageId()" (ngModelChange)="selectedLanguageId.set($event)">
+              <option [value]="54">GCC 9.2.0 (C++)</option>
+              <option [value]="71">Python (3.8.1)</option>
+              <option [value]="62">OpenJDK 13.0.1 (Java)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Maximum Allowed Submissions</label>
+            <div class="addon-wrap">
+              <input class="form-input" type="number" [ngModel]="maxAttempts()" (ngModelChange)="maxAttempts.set($event)" />
+              <div class="addon-text">Attempts</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-card">
+        <div class="card-title">
+          Automated Grading Matrix
+          <span class="badge-purple">{{ totalCases() }} Total cases</span>
+        </div>
+        <div class="test-cases-wrapper">
+          @for (tc of testCases(); track tc.id; let idx = $index) {
+            <div class="tc-item">
+              <div class="tc-header">
+                <div class="tc-num">{{ idx + 1 }}</div>
+                <div class="tc-title">Test Case Matrix #{{ idx + 1 }}</div>
+                <label class="toggle-label">
+                  <input type="checkbox" [checked]="tc.isHidden" (change)="toggleCaseVisibility(tc.id)" />
+                  <div class="toggle-track"><div class="toggle-thumb"></div></div>
+                  <span>{{ tc.isHidden ? 'Hidden Case' : 'Public Example' }}</span>
+                </label>
+                <button class="btn-delete-tc" (click)="removeTestCase(tc.id)">✕</button>
+              </div>
+              <div class="tc-body">
+                <div class="tc-col">
+                  <div class="tc-col-lbl">Standard Input (stdin)</div>
+                  <textarea class="form-textarea code-area" [(ngModel)]="tc.input" placeholder="Data feed sent into stdin..."></textarea>
+                </div>
+                <div class="tc-col">
+                  <div class="tc-col-lbl">Expected stdout</div>
+                  <textarea class="form-textarea code-area" [(ngModel)]="tc.expectedOutput" placeholder="Exact expected standard output text..."></textarea>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+        <button class="btn-add-tc" (click)="addTestCase()">+ Append New Test Case Node</button>
+      </div>
+
+    </div> <div class="builder-sidebar">
+
+      <div class="form-card" style="margin-bottom: 20px;">
+        <div class="card-title"> Assessment Readiness</div>
+        <div class="checklist-item">
+          <div class="check-dot" [ngClass]="examTitle() ? 'check-success' : 'check-pending'">
+            {{ examTitle() ? '✓' : '○' }}
+          </div>
+          <span>Question Title Specified</span>
+        </div>
+        <div class="checklist-item">
+          <div class="check-dot" [ngClass]="examDescription() ? 'check-success' : 'check-pending'">
+            {{ examDescription() ? '✓' : '○' }}
+          </div>
+          <span>Description Markdown Filled</span>
+        </div>
+        <div class="checklist-item">
+          <div class="check-dot" [ngClass]="publicCasesCount() >= 1 ? 'check-success' : 'check-pending'">
+            {{ publicCasesCount() >= 1 ? '✓' : '○' }}
+          </div>
+          <span>At least 1 Public Example Case</span>
+        </div>
+        <div class="checklist-item">
+          <div class="check-dot" [ngClass]="hiddenCasesCount() >= 1 ? 'check-success' : 'check-pending'">
+            {{ hiddenCasesCount() >= 1 ? '✓' : '○' }}
+          </div>
+          <span>At least 1 Hidden Validation Case</span>
+        </div>
+        <div class="checklist-item">
+          <div class="check-dot" [ngClass]="isValidationPassed() ? 'check-success' : 'check-pending'">
+            {{ isValidationPassed() ? '✓' : '○' }}
+          </div>
+          <span>Compiler Success Verified</span>
+        </div>
+      </div>
+
+      <div class="publish-box">
+        <div class="pub-title">Launch Assessment</div>
+        <div class="pub-sub">Once published, the exam metadata locks down and deploys immediately onto the AWS server nodes.</div>
+        <div class="pub-row"><span>Time/Memory Bounds</span><span class="pub-val">{{ timeLimit() }}s / {{ memoryLimit() }}MB</span></div>
+        <div class="pub-row"><span>Automated Matrices</span><span class="pub-val">{{ totalCases() }} Cases ({{ hiddenCasesCount() }} Hidden)</span></div>
+        <div class="pub-row"><span>Mode Selected</span><span class="pub-val" style="color: #5f369e;">{{ examType() }}</span></div>
+        <button class="btn-primary-xl" style="margin-top: 8px;" [disabled]="!isValidationPassed() || isPublishing()" (click)="onPublishExam()">
+          {{ isPublishing() ? 'Broadcasting via SignalR...' : 'Publish Exam Live' }}
+        </button>
+      </div>
+
+    </div> </div> </div>
+
+<div class="sticky-footer">
+  <div>
+    <div class="footer-title">{{ examTitle() || 'Untitled Assessment Blueprint' }}</div>
+    <div class="footer-sub">Deployment Target ID: {{ courseId().toUpperCase() }} · Mode: {{ examType() }}</div>
+  </div>
+  <div class="footer-actions">
+    <button class="btn-footer-outline" (click)="onCancel()">Save Draft</button>
+    <button class="btn-footer-primary" [disabled]="!isValidationPassed() || isPublishing()" (click)="onPublishExam()">
+      {{ isPublishing() ? ' Deploying...' : 'Compile &amp; Deployed ' }}
+    </button>
+  </div>
+</div>

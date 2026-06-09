@@ -8,8 +8,8 @@
         <h3 class="section-title">Session Info</h3>
 
         <div class="status-indicator">
-          <span class="status-dot"></span>
-          <span style="font-weight: 600;">Live Session</span>
+          <span class="status-dot streaming"></span>
+          <span class="status-text">Audio Recording Active</span>
         </div>
 
         <div class="info-group">
@@ -22,213 +22,113 @@
             <span class="info-value">{{ roomName }}</span>
           </div>
           <div class="info-item">
-            <span class="info-label">Duration:</span>
+            <span class="info-label">Elapsed Time:</span>
             <span class="info-value">{{ sessionDuration }}</span>
           </div>
         </div>
       </div>
 
       <div class="sidebar-section">
-        <h3 class="section-title">Students List ({{ presentStudents }}/{{ totalStudents }})</h3>
-        <div class="student-list">
-          @for(student of students; track student.id) {
-            <div class="student-item" [class.absent]="!student.present">
-              <div class="student-avatar">
-                {{ student.name.charAt(0) }}
-              </div>
-              <div class="student-info">
-                <div class="student-info-name">{{ student.name }}</div>
-                <div class="student-info-status" [class.status-present]="student.present">
-                  {{ student.present ? 'Present' : 'Absent' }}
-                </div>
-              </div>
+        <div class="attendance-control">
+          @if (!isAttendanceActive) {
+            <button class="action-btn activate-btn" (click)="openAttendanceModal()">
+              Start BLE Attendance
+            </button>
+          } @else {
+            <div class="status-indicator success-mode">
+              <span class="status-dot pulse-green"></span>
+              <span class="status-text-success">BLE Gateway Open</span>
             </div>
           }
         </div>
       </div>
 
-      <button class="submit-btn" style="width: 100%;" (click)="endSession()">
-        End Session
+      <button class="action-btn stop-btn" (click)="endSession()">
+        End Session & Cancel Recording
       </button>
     </div>
 
     <div class="dashboard-main">
-
-      <div class="chart-section chart-large">
-        <h3 class="chart-title">
-          <span>📊 Class Focus Over Time</span>
-          <span class="trend-badge" [style.color]="getTrendColor()">
-            {{ getTrendIcon() }} {{ focusTrend }}
-          </span>
-        </h3>
-        <div class="chart-container-line">
-          <canvas #focusLineChartCanvas></canvas>
+      <div class="content-card">
+        <div class="card-header">
+          <h3 class="card-title"> Live Attendance Tracker</h3>
+          @if (isAttendanceActive) {
+            <span class="registered-badge">{{ presentStudents }} Registered</span>
+          }
         </div>
+
+        @if (!isAttendanceActive) {
+          <div class="empty-state">
+            <div class="empty-icon">📡</div>
+            <p class="empty-title">Attendance Pending</p>
+            <p class="empty-subtitle">Click "Start BLE Attendance" to open the gateway for this classroom session.</p>
+          </div>
+        } @else if (students.length === 0) {
+          <div class="empty-state processing">
+            <div class="spinner"></div>
+            <p class="empty-title">Broadcasting Beacon Signal</p>
+            <p class="empty-subtitle">Waiting for students to transmit authentication packets via Bluetooth BLE...</p>
+          </div>
+        } @else {
+          <div class="table-responsive">
+            <table class="attendance-table">
+              <thead>
+                <tr>
+                  <th>Student Name</th>
+                  <th>Academic ID</th>
+                  <th>Check-in Time</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for(student of students; track student.id) {
+                  <tr class="student-row-fade">
+                    <td>
+                      <div class="table-student-profile">
+                        <div class="avatar-initial">{{ student.name.charAt(0) }}</div>
+                        <span class="student-name-text">{{ student.name }}</span>
+                      </div>
+                    </td>
+                    <td class="text-secondary">{{ student.academicId || 'N/A' }}</td>
+                    <td class="text-secondary">{{ student.checkInTime }}</td>
+                    <td><span class="badge-status present">Present</span></td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
       </div>
-
-      <div class="analytics-grid">
-
-        <div class="chart-section">
-          <h3 class="chart-title">👥 Attendance Overview</h3>
-          <div class="chart-container-small">
-            <canvas #attendanceChartCanvas></canvas>
-          </div>
-          <div class="chart-stats">
-            <div class="stat-box">
-              <div class="stat-number">{{ attendanceRate }}%</div>
-              <div class="stat-label">Attendance Rate</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="chart-section">
-          <h3 class="chart-title">🎯 Current Focus Level</h3>
-          <div class="chart-container-small">
-            <canvas #focusGaugeChartCanvas></canvas>
-            <div class="gauge-center">
-              <div class="gauge-value" [style.color]="getFocusColor()">
-                {{ averageFocus }}%
-              </div>
-              <div class="gauge-label">Average Focus</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="chart-section">
-          <h3 class="chart-title">📈 Focus Distribution</h3>
-          <div class="chart-container-small">
-            <canvas #focusDistributionCanvas></canvas>
-          </div>
-        </div>
-
-      </div>
-
-    </div>
-
-    <div class="right-panel">
-
-      <div class="metrics-card">
-        <h3 class="panel-title">📌 Key Metrics</h3>
-
-        <div class="metric-item">
-          <div class="metric-icon" style="background: #e0f2fe;">📚</div>
-          <div class="metric-content">
-            <div class="metric-value">{{ totalStudents }}</div>
-            <div class="metric-label">Total Students</div>
-          </div>
-        </div>
-
-        <div class="metric-item">
-          <div class="metric-icon" style="background: #dcfce7;">✅</div>
-          <div class="metric-content">
-            <div class="metric-value present">{{ presentStudents }}</div>
-            <div class="metric-label">Present</div>
-          </div>
-        </div>
-
-        <div class="metric-item">
-          <div class="metric-icon" style="background: #fee2e2;">❌</div>
-          <div class="metric-content">
-            <div class="metric-value absent">{{ absentStudents }}</div>
-            <div class="metric-label">Absent</div>
-          </div>
-        </div>
-
-        <div class="metric-item highlight">
-          <div class="metric-icon" style="background: #f3e8ff;">🧠</div>
-          <div class="metric-content">
-            <div class="metric-value" [style.color]="getFocusColor()">{{ averageFocus }}%</div>
-            <div class="metric-label">Average Focus</div>
-          </div>
-        </div>
-              <button class="submit-btn" style="width: 100%;" (click)="endSession()">
-        End Session
-      </button>
-
-      </div>
-
-      <div class="stats-card">
-        <h3 class="panel-title">📊 Focus Statistics</h3>
-
-        <div class="stat-row">
-          <span class="stat-label">Current Focus:</span>
-          <span class="stat-value" [style.color]="getFocusColor()">{{ averageFocus }}%</span>
-        </div>
-
-        <div class="stat-row">
-          <span class="stat-label">Peak Focus:</span>
-          <span class="stat-value" style="color: #10b981;">{{ maxFocus }}%</span>
-        </div>
-
-        <div class="stat-row">
-          <span class="stat-label">Lowest Focus:</span>
-          <span class="stat-value" style="color: #ef4444;">{{ minFocus }}%</span>
-        </div>
-
-        <div class="stat-row">
-          <span class="stat-label">Trend:</span>
-          <span class="stat-value" [style.color]="getTrendColor()">
-            {{ getTrendIcon() }} {{ focusTrend }}
-          </span>
-        </div>
-
-        <div class="stat-row">
-          <span class="stat-label">Session Time:</span>
-          <span class="stat-value">{{ sessionDuration }}</span>
-        </div>
-      </div>
-
-      <div class="insights-card">
-        <h3 class="panel-title">💡 Quick Insights</h3>
-
-        <div class="insight-item" [class.insight-success]="attendanceRate >= 80">
-          <div class="insight-icon">
-            {{ attendanceRate >= 80 ? '✅' : '⚠️' }}
-          </div>
-          <div class="insight-text">
-            @if(attendanceRate >= 80) {
-              <span>Excellent attendance rate!</span>
-            } @else if(attendanceRate >= 60) {
-              <span>Good attendance, room for improvement</span>
-            } @else {
-              <span>Low attendance - follow up needed</span>
-            }
-          </div>
-        </div>
-
-        <div class="insight-item" [class.insight-success]="averageFocus >= 70">
-          <div class="insight-icon">
-            {{ averageFocus >= 70 ? '🎯' : '📉' }}
-          </div>
-          <div class="insight-text">
-            @if(averageFocus >= 80) {
-              <span>Class is highly engaged!</span>
-            } @else if(averageFocus >= 60) {
-              <span>Moderate focus level</span>
-            } @else {
-              <span>Consider interactive activities</span>
-            }
-          </div>
-        </div>
-
-        <div class="insight-item" [class.insight-success]="focusTrend === 'increasing'">
-          <div class="insight-icon">
-            {{ focusTrend === 'increasing' ? '📈' : focusTrend === 'decreasing' ? '📉' : '➡️' }}
-          </div>
-          <div class="insight-text">
-            @if(focusTrend === 'increasing') {
-              <span>Focus is improving!</span>
-            } @else if(focusTrend === 'decreasing') {
-              <span>Focus declining - take a break?</span>
-            } @else {
-              <span>Focus remains stable</span>
-            }
-          </div>
-        </div>
-
-      </div>
-
     </div>
 
   </div>
 </div>
+
+@if (showModal) {
+  <div class="modal-backdrop" (click)="closeAttendanceModal()">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-icon">⏱️</div>
+        <h3>Attendance Configuration</h3>
+      </div>
+      <div class="modal-body">
+        <p>Define the operational timeframe for the BLE beacon session. After expiration, the gateway will close automatically.</p>
+        <div class="input-wrapper">
+          <label for="durationInput">Session Duration (Minutes)</label>
+          <input
+            id="durationInput"
+            type="number"
+            [(ngModel)]="attendanceDuration"
+            min="1"
+            max="60"
+            class="custom-input"
+          >
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="modal-btn btn-secondary" (click)="closeAttendanceModal()">Cancel</button>
+        <button class="modal-btn btn-primary" (click)="confirmAttendanceActivation()">Activate Gateway</button>
+      </div>
+    </div>
+  </div>
+}

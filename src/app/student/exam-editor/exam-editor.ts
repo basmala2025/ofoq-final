@@ -1,14 +1,12 @@
-import { Component, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewInit, HostListener } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewInit, HostListener, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { Router } from '@angular/router';
-import { HttpClient } from '@angular/common/http'; // ✅ ضفنا ה-HttpClient
-import { SocketService } from '../../services/socket';
-import { ExamService } from '../../services/exam';
+import { ActivatedRoute, Router } from '@angular/router';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { ExamService } from '../exam';
 import loader from '@monaco-editor/loader';
-import * as signalR from '@microsoft/signalr';
 
 @Component({
   selector: 'app-exam-editor',
@@ -17,78 +15,114 @@ import * as signalR from '@microsoft/signalr';
   templateUrl: './exam-editor.html',
   styleUrls: ['./exam-editor.css']
 })
-export class ExamEditorComponent implements OnInit, AfterViewInit, OnDestroy { // ✅ ضفنا OnInit
+export class ExamEditorComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('editorContainer', { static: true }) editorContainer!: ElementRef;
-  @ViewChild('videoElement') videoElement!: ElementRef;
 
+  // Exam Identification
+  examId!: string;
   editor: any;
-  private mediaStream: MediaStream | null = null;
-  private streamInterval: any;
-  private audioRecorder: MediaRecorder | null = null;
-
-  // 💡 Connection channel to .NET Backend
-  private hubConnection!: signalR.HubConnection;
-
-  // Voice AI Model URL
-  private readonly VOICE_API_URL = 'https://gannaeslam38-ofoq-ai-engine.hf.space/analyze_audio';
-
-  // Security Statistics & State
-  violationCount = 0;
-  isExamFinished = false;
-  isPanicMode = false;
-  showSecurityToast = false;
-  isRedAlarm = false;
-  securityMessage = '';
-  cvActive = false;
   savedCodeKey = 'ofoq_exam_backup';
 
-  // ✅ متغير لحفظ رقم الجلسة
-  sessionId: string | null = null;
+  // Timer Variable for UI Tracking
+  timerDisplay = '00:00';
+  private timerInterval: any; // Reference tracker to clear interval on component destruction
 
-  // Timer Configuration
-  timeRemaining = 45 * 60;
-  timerDisplay = '45:00';
-  private timerInterval: any;
-  output = `System Initialized. Status: Secure.`;
+  // Problem Properties Mapped from API
+  problemTitle = 'Loading assessment...';
+  problemDescription = '';
+  allowedLanguage = 'cpp';
+
+  // Security and Integrity UI States
+  violationCount = 0;
+  consoleOutput = 'System output idle. Click "Run Code" to benchmark calculations.';
+  compileMessage = '';
+  isLoading = false;
+
+  publicTestCases: any[] = [];
+  // Security Toast Overlay Configurations
+  showSecurityToast = false;
+  securityMessage = '';
+  isRedAlarm = false;
 
   constructor(
+    private route: ActivatedRoute,
     private router: Router,
-    private socketService: SocketService,
     private examService: ExamService,
-    private http: HttpClient // ✅ حقن الـ HttpClient هنا
+    private http: HttpClient,
+    private cdr: ChangeDetectorRef
   ) {}
 
-  // ==========================================
-  // --- 0. Exam Session Initialization ---
-  // ==========================================
-
-  // ✅ الدالة دي هتشتغل أول ما الصفحة تفتح عشان تبلغ الباك إند ببدء الجلسة
   ngOnInit() {
-    this.sessionId = localStorage.getItem('currentSessionId');
-    if (this.sessionId) {
-      this.http.post(`https://ofoqai.runasp.net/api/v1/exam/start/${this.sessionId}`, {}).subscribe({
-        next: () => {
-          console.log("✅ Exam session officially started on server");
-          this.output += `\n[Server]: Exam session started successfully.`;
-        },
-        error: (err) => {
-          console.error("❌ Failed to start exam session", err);
-          this.output += `\n[Server Warning]: Could not confirm session start.`;
-        }
-      });
-    } else {
-      this.output += `\n[Warning]: No Session ID found in local storage.`;
-    }
+    // Extract exam ID parameter from the current active route sequence
+    this.examId = this.route.snapshot.paramMap.get('examId')!;
+    this.loadExamProblemDetails();
   }
 
-  // ==========================================
-  // --- 1. Environment Security & Tracking ---
-  // ==========================================
+  ngAfterViewInit() {
+    // Enforce fullscreen workspace configuration immediately upon visual initialization
+    this.enterFullScreen();
+  }
+
+  /**
+   * Fetches the technical specifications and constraints of the active assessment
+   */
+loadExamProblemDetails() {
+
+// 2. جوه ميثود loadExamProblemDetails وفي الـ next:
+this.examService.getExamDetails(this.examId).subscribe({
+  next: (res) => {
+    this.problemTitle = res.title || 'Untitled Assessment';
+    this.problemDescription = res.description || 'No descriptive tasks provided.';
+
+    // 👇 السطر السحري لتخزين الـ Cases اللي جاية من الـ API
+    this.publicTestCases = res.publicTestCases || [];
+
+    const langLower = res.constraints?.allowedLanguage?.toLowerCase() || '';
+    this.allowedLanguage = langLower.includes('c++') || langLower.includes('cpp') ? 'cpp' : 'python';
+
+    const remainingSeconds = res.remainingSeconds || res.constraints?.timeLimitSec || 3600;
+    this.startTimerCountdown(remainingSeconds);
+
+    this.initMonacoEditor();
+  },
+  // ...
+});
+  }
+
+  /**
+   * Orchestrates the active ticking timer system updating the interface sequentially
+   */
+  startTimerCountdown(seconds: number) {
+    if (this.timerInterval) clearInterval(this.timerInterval);
+
+    const updateDisplay = (secs: number) => {
+      const minutes = Math.floor(secs / 60);
+      const remainingSecs = secs % 60;
+      this.timerDisplay = `${minutes.toString().padStart(2, '0')}:${remainingSecs.toString().padStart(2, '0')}`;
+    };
+
+    updateDisplay(seconds); // Trigger initial synchronization tick
+
+    this.timerInterval = setInterval(() => {
+      if (seconds > 0) {
+        seconds--;
+        updateDisplay(seconds);
+      } else {
+        clearInterval(this.timerInterval);
+        this.timerDisplay = "00:00";
+        this.forceSubmitAndExit(); // Automatic environmental submission lock upon time expiration
+      }
+    }, 1000);
+  }
+
+  // =========================================================================
+  // 🔐 ANTI-CHEAT INTEGRITY HOOKS: Event Interceptions & Enforcement Routines
+  // =========================================================================
 
   @HostListener('document:contextmenu', ['$event'])
   preventRightClick(e: MouseEvent) {
     e.preventDefault();
-    this.showWarning('Right-Click Blocked! (Warning)');
+    this.triggerViolation('Right-Click Context Menu Blocked');
   }
 
   @HostListener('document:keydown', ['$event'])
@@ -97,295 +131,126 @@ export class ExamEditorComponent implements OnInit, AfterViewInit, OnDestroy { /
     const ctrl = e.ctrlKey || e.metaKey;
     if ((ctrl && ['c', 'v', 'a', 'x', 's'].includes(key)) || e.key === 'f12') {
       e.preventDefault();
-      this.showWarning(`Shortcut Ctrl+${key.toUpperCase()} Blocked! (Warning)`);
+      this.triggerViolation(`Security Bypass Attempt: Ctrl+${key.toUpperCase()}`);
     }
   }
 
   @HostListener('document:visibilitychange')
   onVisibilityChange() {
-    if (document.hidden && !this.isExamFinished) {
-      this.isPanicMode = true;
-      // Local browser alarm, no AI needed
-      this.triggerViolentAlarm('ALARM: Tab Switch Detected!');
-    } else {
-      setTimeout(() => this.isPanicMode = false, 1500);
+    if (document.hidden) {
+      this.triggerViolation('Tab Switch Event Registered');
     }
   }
 
-  // ==========================================
-  // --- 2. System Initialization ---
-  // ==========================================
+  /**
+   * Flags anti-cheat metrics to backend system and evaluates the execution of a forced lock out
+   */
+  triggerViolation(type: string) {
+    this.examService.logTabSwitch(this.examId).subscribe({
+      next: (res: any) => {
+        this.violationCount = res.currentViolationCount;
 
-  ngAfterViewInit() {
-    this.initCamera();
-    this.enterFullScreen();
-    // this.startSignalRConnection(); // 💡 Uncomment to start backend connection
+        // Condition evaluation to invoke immediate termination protocol upon 3rd anomaly
+        if (res.shouldTerminate) {
+          this.isRedAlarm = true;
+          this.securityMessage = res.serverMessage || 'Integrity threshold breached. Session revoked.';
+          this.showSecurityToast = true;
 
+          setTimeout(() => {
+            this.forceSubmitAndExit();
+          }, 3000);
+        } else {
+          // Warning notifications tracking the incremental thresholds
+          this.securityMessage = `⚠️ Security Warning: ${type}. Violations: ${this.violationCount}/3. Deduction Imposed: ${res.integrityScoreDeduction}`;
+          this.isRedAlarm = false;
+          this.showSecurityToast = true;
+          setTimeout(() => this.showSecurityToast = false, 4000);
+        }
+      }
+    });
+  }
+
+  // =========================================================================
+  // 💻 SANDBOX COMPILATION CORES: Monaco Configuration & Judge0 Routing Pipes
+  // =========================================================================
+
+  initMonacoEditor() {
     loader.init().then((monaco: any) => {
       const recovered = localStorage.getItem(this.savedCodeKey);
+      const defaultCode = this.allowedLanguage === 'cpp'
+        ? `#include <iostream>\nusing namespace std;\n\nint main() {\n    // Solve problem here\n    return 0;\n}`
+        : `# Solve problem here\ndef main():\n    pass`;
+
       this.editor = monaco.editor.create(this.editorContainer.nativeElement, {
-        value: recovered || `# Solve the problem here\ndef solve():\n    pass`,
-        language: 'python',
+        value: recovered || defaultCode,
+        language: this.allowedLanguage,
         theme: 'vs-dark',
         automaticLayout: true,
         contextmenu: false
       });
 
       this.editor.onDidChangeModelContent(() => {
-        if (!this.isExamFinished) {
-          localStorage.setItem(this.savedCodeKey, this.editor.getValue());
-        }
+        localStorage.setItem(this.savedCodeKey, this.editor.getValue());
       });
     });
-    this.startTimer();
   }
 
-  // ==========================================
-  // --- 3. .NET SignalR Connection ---
-  // ==========================================
-
-  startSignalRConnection() {
-    this.hubConnection = new signalR.HubConnectionBuilder()
-      .withUrl('https://localhost:5001/examHub') // ⚠️ Adjust port based on your .NET project
-      .withAutomaticReconnect()
-      .build();
-
-    // Listen for incoming alarms from backend
-    this.hubConnection.on('ReceiveAlarm', (violationType: string) => {
-      if (!this.isExamFinished) {
-        this.triggerViolentAlarm(`ALARM: ${violationType}`);
-      }
-    });
-
-    this.hubConnection.start()
-      .then(() => console.log('✅ Connected to .NET SignalR Secure Channel'))
-      .catch(err => console.error('❌ SignalR Connection Error: ', err));
-  }
-
-  // ==========================================
-  // --- 4. A/V Streaming & AI Integration ---
-  // ==========================================
-
-  async initCamera() {
-    try {
-      this.mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { width: 640 },
-        audio: {
-          echoCancellation: true,    // Enable echo cancellation (crucial)
-          noiseSuppression: true,    // Suppress background noise/static
-          autoGainControl: false,    // Disable automatic gain control
-          channelCount: 1            // Set to Mono channel to reduce data size
-        }
-      });
-
-      if (this.videoElement?.nativeElement) {
-        this.videoElement.nativeElement.srcObject = this.mediaStream;
-        // ⚠️ Programmatically ensure video is muted to prevent feedback loop
-        this.videoElement.nativeElement.muted = true;
-        this.videoElement.nativeElement.volume = 0;
-      }
-
-      this.cvActive = true;
-      this.socketService.connectToAI(); // Connect to Python Vision API
-      this.startVideoStreaming();       // Start video streaming
-      this.startAudioMonitoring();      // Start audio monitoring
-
-    } catch {
-      this.output += '\nError: Camera and Microphone access required for secure environment.';
-    }
-  }
-
-  startVideoStreaming() {
-    this.streamInterval = setInterval(() => {
-      if (this.isExamFinished) return;
-      const video = this.videoElement?.nativeElement;
-
-      if (video && video.readyState === 4) {
-        const canvas = document.createElement('canvas');
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        canvas.getContext('2d')?.drawImage(video, 0, 0);
-        this.socketService.sendFrame(canvas.toDataURL('image/jpeg', 0.4));
-        // 💡 Note: No AI response listener here. Frames are sent silently.
-      }
-    }, 250);
-  }
-
-  startAudioMonitoring() {
-    if (!this.mediaStream || this.isExamFinished) return;
-
-    console.log('🎙️ [Audio] Starting new 10-second recording cycle...');
-    this.audioRecorder = new MediaRecorder(this.mediaStream);
-    const chunks: BlobPart[] = [];
-
-    this.audioRecorder.ondataavailable = (event) => {
-      if (event.data.size > 0) chunks.push(event.data);
-    };
-
-    this.audioRecorder.onstop = () => {
-      console.log('⏹️ [Audio] Recording stopped. Preparing to send...');
-
-      if (!this.isExamFinished && chunks.length > 0) {
-        const audioBlob = new Blob(chunks, { type: 'audio/webm' });
-        console.log(`📤 [Audio] Sending file to server... (Size: ${audioBlob.size} bytes)`);
-        this.sendAudioToHuggingFace(audioBlob);
-      } else {
-        console.warn('⚠️ [Audio] No audio recorded!');
-      }
-
-      // Half-second delay before next cycle to allow browser breathing room
-      if (!this.isExamFinished) {
-        setTimeout(() => this.startAudioMonitoring(), 500);
-      }
-    };
-
-    this.audioRecorder.start();
-
-    // Stop recording after 10 seconds
-    setTimeout(() => {
-      if (this.audioRecorder && this.audioRecorder.state === 'recording') {
-        this.audioRecorder.stop();
-      }
-    }, 10000);
-  }
-
-  async sendAudioToHuggingFace(audioBlob: Blob) {
-    const formData = new FormData();
-    formData.append('file', audioBlob, 'exam_audio.webm');
-
-    try {
-      const response = await fetch(this.VOICE_API_URL, { method: 'POST', body: formData });
-
-      if (!response.ok) {
-        console.error(`❌ [Audio API] Request rejected! Status: ${response.status}`);
-        return;
-      }
-
-      const data = await response.json();
-      console.log('✅ [Audio API] Server responded successfully:', data);
-
-      // Parse result and trigger alarm if cheating detected
-      if (data && (data.label === 1 || data.status !== 'Normal')) {
-        this.triggerViolentAlarm(`VOICE ALARM: Suspicious audio detected!`);
-      }
-
-    } catch (error) {
-      console.error('❌ [Audio API] Server offline or connection failed:', error);
-    }
-  }
-
-  // ==========================================
-  // --- 5. Alerts & Violation Logic ---
-  // ==========================================
-
-  showWarning(msg: string) {
-    if (this.isRedAlarm || this.isExamFinished) return;
-    this.securityMessage = msg;
-    this.isRedAlarm = false;
-    this.showSecurityToast = true;
-    this.output += `\n[Warning]: ${msg}`;
-    setTimeout(() => { if(!this.isRedAlarm) this.showSecurityToast = false; }, 3000);
-  }
-
-  triggerViolentAlarm(msg: string) {
-    if (this.isExamFinished) return;
-
-    this.violationCount++;
-    this.securityMessage = msg;
-    this.isRedAlarm = true;
-    this.showSecurityToast = true;
-    this.output += `\n[ALARM ${this.violationCount}/3]: ${msg}`;
-
-    if (this.violationCount >= 3) {
-      this.output += `\n[CRITICAL]: 3 Alarms reached. Terminating session NOW.`;
-      setTimeout(() => this.submitSolution(), 1000);
-    } else {
-      setTimeout(() => { this.showSecurityToast = false; this.isRedAlarm = false; }, 5000);
-    }
-  }
-
-  // ==========================================
-  // --- 6. Exam Execution & Submission ---
-  // ==========================================
-
+  /**
+   * Dispatches current localized workspace matrix to the sandboxed Judge0 execution nodes
+   */
   runCode() {
-    if (this.isExamFinished) return;
+    if (!this.editor) return;
+    this.isLoading = true;
+    this.consoleOutput = 'Compiling and executing code on sandbox container...';
 
-    const currentCode = this.editor.getValue();
-    this.output += `\n[${new Date().toLocaleTimeString()}] Running Code...`;
-
-    setTimeout(() => {
-      if (currentCode.trim() === '') {
-        this.output += `\n❌ Error: No code to run!`;
-      } else {
-        this.output += `\n✅ Execution finished successfully.\n[Output]: Standard test cases passed.`;
+    const sourceCode = this.editor.getValue();
+    this.examService.runSandbox(this.examId, sourceCode, this.allowedLanguage).subscribe({
+      next: (res) => {
+        this.compileMessage = res.compileOutput;
+        this.consoleOutput = res.isPassed
+          ? `✅ Passed Public Cases!\nOutput: ${res.runOutput}`
+          : `❌ Failed Public Test Cases.\nOutput: ${res.runOutput}\n${res.compileOutput}`;
+        this.isLoading = false;
+      },
+      error: (err) => {
+        this.consoleOutput = '❌ Sandbox Runtime Execution Refused.';
+        this.isLoading = false;
       }
-      const consoleBody = document.querySelector('.console-body');
-      if (consoleBody) consoleBody.scrollTop = consoleBody.scrollHeight;
-    }, 1000);
-  }
-
-  submitSolution() {
-    if (this.isExamFinished) return;
-    this.isExamFinished = true;
-
-    this.output += `\nSystem: Finalizing submission...`;
-    this.stopEverything();
-
-    const studentCode = this.editor ? this.editor.getValue() : localStorage.getItem(this.savedCodeKey);
-
-    // ✅ إرسال طلب إغلاق الجلسة للباك إند
-    if (this.sessionId) {
-      this.http.post(`https://ofoqai.runasp.net/api/v1/exam/end/${this.sessionId}`, {}).subscribe({
-        next: () => console.log('✅ Exam session closed on server'),
-        error: (err) => console.error('❌ Failed to close exam session', err)
-      });
-    }
-
-    this.examService.submitExam({
-      code: studentCode,
-      violations: this.violationCount,
-      terminated: this.violationCount >= 3
-    }).subscribe({
-      next: () => this.goToResults(),
-      error: () => this.goToResults()
     });
   }
 
-  private goToResults() {
-    localStorage.removeItem(this.savedCodeKey);
-    this.router.navigate(['/'], { replaceUrl: true });
+  /**
+   * Standard formal code evaluation submission sequence triggered directly by student intent
+   */
+  submitSolution() {
+    if (!this.editor) return;
+    if (!confirm('Are you sure you want to finalize your submission? This locks your grade calculation.')) return;
+
+    const sourceCode = this.editor.getValue();
+    this.examService.submitExam(this.examId, sourceCode).subscribe({
+      next: (res) => {
+        this.cleanupEnvironment();
+        this.router.navigate(['/exam/result', this.examId]);
+      },
+      error: (err) => console.error('Finalization request crashed:', err)
+    });
   }
 
-  private stopEverything() {
-    if (this.hubConnection) this.hubConnection.stop();
-    if (this.audioRecorder && this.audioRecorder.state !== 'inactive') this.audioRecorder.stop();
-
-    if (this.mediaStream) {
-      this.mediaStream.getTracks().forEach(t => t.stop());
-      this.mediaStream = null;
-    }
-    if (this.videoElement && this.videoElement.nativeElement) {
-      this.videoElement.nativeElement.srcObject = null;
-    }
-
-    this.socketService.disconnect();
-    if (this.streamInterval) clearInterval(this.streamInterval);
-    if (this.timerInterval) clearInterval(this.timerInterval);
-    if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
-  }
-
-  startTimer() {
-    this.timerInterval = setInterval(() => {
-      if (this.timeRemaining > 0) {
-        this.timeRemaining--;
-        const m = Math.floor(this.timeRemaining / 60);
-        const s = this.timeRemaining % 60;
-        this.timerDisplay = `${m}:${s.toString().padStart(2, '0')}`;
-      } else {
-        this.submitSolution();
+  /**
+   * Security enforcement script forcing payload delivery and locking context on critical alarms
+   */
+  forceSubmitAndExit() {
+    const backupCode = this.editor ? this.editor.getValue() : (localStorage.getItem(this.savedCodeKey) || '');
+    this.examService.submitExam(this.examId, backupCode).subscribe({
+      next: () => {
+        this.cleanupEnvironment();
+        this.router.navigate(['/exam/result', this.examId]);
+      },
+      error: () => {
+        this.cleanupEnvironment();
+        this.router.navigate(['/dashboard']);
       }
-    }, 1000);
+    });
   }
 
   enterFullScreen() {
@@ -393,7 +258,14 @@ export class ExamEditorComponent implements OnInit, AfterViewInit, OnDestroy { /
     if (el.requestFullscreen) el.requestFullscreen().catch(() => {});
   }
 
+  cleanupEnvironment() {
+    localStorage.removeItem(this.savedCodeKey);
+    if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
+  }
+
   ngOnDestroy() {
-    this.stopEverything();
+    // Teardown ticking threads to block application frame leakage and performance drag
+    if (this.timerInterval) clearInterval(this.timerInterval);
+    this.cleanupEnvironment();
   }
 }

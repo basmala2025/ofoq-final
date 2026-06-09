@@ -1,0 +1,102 @@
+<div class="section-block">
+  <button class="back-btn" (click)="onBackToCourse()">← Back to Course Dashboard</button>
+
+  <div *ngIf="isLoading()" class="loading-placeholder" style="text-align: center; padding: 40px; color: #64748b;">
+    <p>Loading candidate evaluation rosters and compiling chronological vision logs...</p>
+  </div>
+
+  <div *ngIf="!isLoading()" class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Student Name</th>
+          <th>Academic ID</th>
+          <th>Status</th>
+          <th>Grade Obtained</th>
+          <th>AI Proctoring Alarms</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (student of submissions(); track student.studentId) {
+          <tr>
+            <td>
+              <button class="student-name-btn" (click)="openStudentPanel(student)">
+                {{ student.name }}
+              </button>
+            </td>
+            <td class="mono">{{ student.academicId }}</td>
+            <td>
+              <span class="badge" [ngClass]="student.status === 'Submitted' ? 'badge-green' : 'badge-amber'">
+                {{ student.status }}
+              </span>
+            </td>
+            <td style="font-weight: 700; color: #0f172a;">{{ student.grade }}</td>
+            <td>
+              <span class="badge" [ngClass]="student.alarmCount > 0 ? 'badge-red' : 'badge-gray'">
+                {{ student.alarmCount }} Alarms
+              </span>
+            </td>
+            <td>
+              <button class="student-name-btn" style="font-size: 13px;" (click)="openStudentPanel(student)">
+                View Logs
+              </button>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="6" class="text-center muted" style="padding: 40px; font-style: italic; text-align: center; color: #94a3b8;">
+              No student submissions or session logs found for this exam.
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="modal-overlay" [ngClass]="{'open': isPanelOpen()}" (click)="closeStudentPanel()">
+  <div class="side-panel" (click)="$event.stopPropagation()">
+
+    <div class="panel-header" *ngIf="selectedStudent()">
+      <div class="panel-student-info">
+        <div class="panel-avatar">{{ selectedStudent()?.name?.charAt(0) }}</div>
+        <div>
+          <div class="panel-student-name">{{ selectedStudent()?.name }}</div>
+          <div class="panel-student-id">Academic ID: {{ selectedStudent()?.academicId }}</div>
+        </div>
+      </div>
+      <button class="panel-close-btn" (click)="closeStudentPanel()">✕</button>
+    </div>
+
+    <div class="panel-body" *ngIf="selectedStudent()">
+      <div class="panel-section-title">🚨 Chronological AI Proctoring Alarm Logs</div>
+      <div class="alarm-log" style="display: flex; flex-direction: column; gap: 12px; margin-top: 16px;">
+
+        @for (log of selectedStudent()?.alarmLogs; track log.time) {
+          <div class="alarm-row" style="display: flex; gap: 12px; padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px;">
+            <div class="alarm-dot dot-red" style="width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 6px; background: #ef4444; box-shadow: 0 0 8px #ef4444;"></div>
+            <div class="history-info">
+              <div class="history-exam" style="font-size: 13px; font-weight: 700; color: #1e293b;">
+                Anomaly Triggered: {{ log.type }}
+              </div>
+              <div class="history-meta" style="font-size: 11px; color: #64748b; margin-top: 4px;">
+                Detected timestamp interval: <span class="mono" style="color: #5f369e; font-weight: bold;">{{ log.time }}</span> from start phase
+              </div>
+            </div>
+          </div>
+        } @empty {
+          <div class="badge badge-green" style="width: 100%; justify-content: center; padding: 14px; border-radius: 10px; background: #dcfce7; color: #166534; font-weight: 700; text-align: center;">
+            ✓ Clean Monitoring Window. No anomalous activities caught by computer vision models.
+          </div>
+        }
+
+      </div>
+    </div>
+
+    <div class="panel-footer">
+      <button class="btn-panel btn-panel-danger">Flag Session</button>
+      <button class="btn-panel btn-panel-primary" (click)="closeStudentPanel()">Dismiss</button>
+    </div>
+  </div>
+</div>

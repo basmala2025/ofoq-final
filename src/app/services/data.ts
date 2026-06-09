@@ -3,6 +3,7 @@ import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { tap, map } from 'rxjs/operators';
 import { Course, Session } from '../models/data.model';
+import { Observable } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -10,10 +11,8 @@ import { Course, Session } from '../models/data.model';
 export class DataService {
   private http = inject(HttpClient);
 
-  // 1. Base URL for the Backend API
   private baseUrl = 'https://ofoqai.runasp.net/api';
 
-  // 2. Signal to store and manage the courses state
   courses = signal<Course[]>([]);
 
   constructor() { }
@@ -48,14 +47,13 @@ export class DataService {
 
   /**
    * Creates a new lecture for a specific course using FormData.
-   * Sends ONLY text fields as requested by the updated API logic (No File).
+   * Sends text fields and a dummy file as requested by the API structure.
    */
-createLecture(courseId: string, title: string, description: string) {
+  createLecture(courseId: string, title: string, description: string) {
     const formData = new FormData();
 
     formData.append('title', title);
     formData.append('description', description);
-
     formData.append('lectureDate', new Date().toISOString());
 
     const pdfHeader = "%PDF-1.4\n1 0 obj\n<< /Title (Dummy PDF) >>\nendobj\n";
@@ -71,6 +69,25 @@ createLecture(courseId: string, title: string, description: string) {
 
     return this.http.post<any>(`${this.baseUrl}/courses/${courseId}/lectures`, formData);
   }
+
+  /**
+   * Activates the BLE attendance tracking session for a specific lecture.
+   * Triggers the backend to change state and notify mobile devices.
+   */
+  activateAttendance(lectureId: string, durationInMinutes: number): Observable<any> {
+    const url = `${this.baseUrl}/lectures/${lectureId}/activate-attendance`;
+    const body = {
+      durationInMinutes: durationInMinutes
+    };
+    const headers = new HttpHeaders({
+      'Content-Type': 'application/json',
+      'accept': '*/*'
+    });
+
+    console.log(`Activating attendance for lecture: ${lectureId} with duration: ${durationInMinutes} mins`);
+    return this.http.post<any>(url, body, { headers });
+  }
+
   /**
    * Synchronously finds a course from the local signal state by its ID.
    */

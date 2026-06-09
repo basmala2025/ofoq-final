@@ -1,0 +1,32 @@
+/* ── FLOATING LOGOUT BUTTON (OFOQ STYLE) ── */
+.floating-logout-btn {
+  position: fixed;
+  bottom: 24px; /* المسافة من أسفل الشاشة */
+  right: 24px;  /* المسافة من يمين الشاشة */
+  width: 52px;
+  height: 52px;
+  background: linear-gradient(135deg, #ef4444 0%, #991b1b 100%); /* تدريج أحمر فخم للتنبيه بالخروج */
+  border: none;
+  border-radius: 50%; /* تحويل الزرار لدائرة كاملة */
+  color: #ffffff;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.4); /* ضل منبثق بلون الزرار */
+  z-index: 9999; /* يضمن ظهور الدائرة فوق أي جداول أو Side Panels */
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* تأثير الـ Hover لما الماوس ييجي عليه */
+.floating-logout-btn:hover {
+  transform: translateY(-4px) scale(1.05); /* يرتفع لفوق ويكبر سنة صغيرة */
+  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.6);
+  background: linear-gradient(135deg, #dc2626 0%, #7f1d1d 100%);
+}
+
+/* تأثير الضغط (Click) */
+.floating-logout-btn:active {
+  transform: translateY(-1px) scale(0.98);
+}

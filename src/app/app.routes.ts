@@ -1,8 +1,8 @@
 import { Routes } from '@angular/router';
-import { authGuard, guestGuard, roleGuard } from './auth/auth-guard'; // هنكودهم في الخطوة الجاية
-import { confirmExitGuard } from './exam/exam-guard'; // جارد حماية الامتحان
+import { authGuard, guestGuard, roleGuard } from './auth/auth-guard';
+import { confirmExitGuard } from './exam/exam-guard';
 import { Stdprofile } from './student/stdprofile/stdprofile';
-import { SessionSummary } from './dashboard/summary/summary';
+import { sessionSummaryData } from './dashboard/summary/summary';
 import { Profprofile } from './profprofile/profprofile';
 import { CourseDetails } from './dashboard/course-details/course-details';
 import { Dashboard } from './dashboard/dashboard';
@@ -11,11 +11,12 @@ import { Signup } from './auth/signup/signup';
 import { Login } from './auth/login/login';
 import { AdminManagement } from './admin/admin-management/admin-management';
 import { IdentityVerifyComponent } from './student/identity-verify/identity-verify';
+
 export const routes: Routes = [
- { path: '', redirectTo: '/home', pathMatch: 'full' },
- { path: 'home', component: Home, canActivate: [guestGuard] },
- { path: 'signup', component: Signup },
- { path: 'login', component: Login, canActivate: [guestGuard] },
+  { path: '', redirectTo: '/home', pathMatch: 'full' },
+  { path: 'home', component: Home, canActivate: [guestGuard] },
+  { path: 'signup', component: Signup },
+  { path: 'login', component: Login, canActivate: [guestGuard] },
   {
     path: 'dashboard',
     component: Dashboard,
@@ -34,7 +35,7 @@ export const routes: Routes = [
     canActivate: [authGuard, roleGuard],
     data: { role: 'professor' }
   },
-  { path: 'summary', component: SessionSummary, canActivate: [authGuard] },
+  { path: 'summary', component: sessionSummaryData, canActivate: [authGuard] },
   { path: 'profprofile', component: Profprofile, canActivate: [authGuard] },
 
   {
@@ -48,22 +49,28 @@ export const routes: Routes = [
     loadComponent: () => import('./student/course-selection/course-selection').then(m => m.CoursesPageComponent),
     canActivate: [authGuard]
   },
+  // 🚨 تعديل: غيرنا الباراميتر هنا لـ :examId عشان يطابق الـ Editor كود بالظبط
   {
-    path: 'exam',
+    path: 'exam/:examId',
     loadComponent: () => import('./student/exam-editor/exam-editor').then(m => m.ExamEditorComponent),
     canActivate: [authGuard],
     canDeactivate: [confirmExitGuard]
   },
-  // { path: 'results', loadComponent: () => import('./student/results/results').then(m => m.Results), canActivate: [authGuard] },
   { path: 'stdprofile', component: Stdprofile, canActivate: [authGuard] },
   {
     path: 'admin-dashboard',
     component: AdminManagement,
+  },
+  // 🚨 تعديل: غيرنا الباراميتر هنا لـ :examId لتوحيد الفلو التلقائي
+  { path: 'exam/verify/:examId', component: IdentityVerifyComponent, canActivate: [authGuard] },
+  {
+    path: 'ta-dashboard',
+    canActivate: [authGuard, roleGuard],
+    data: { role: 'ta' },
+    loadChildren: () => import('./ta/ta-dashboard.routes').then(m => m.TA_DASHBOARD_ROUTES)
+  },
+  {
+    path: '**',
+    redirectTo: ''
   }
-,
-{ path: 'exam/verify/:id', component: IdentityVerifyComponent },
-  // {
-  //   path: 'dashboard-ta',
-  // }
-
 ];

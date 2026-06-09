@@ -17,8 +17,7 @@ export const guestGuard: CanActivateFn = () => {
   if (token && savedRole) {
     if (savedRole === '3' || savedRole.includes('admin')) return router.createUrlTree(['/admin-dashboard']);
     if (savedRole === '2' || savedRole.includes('prof')) return router.createUrlTree(['/dashboard']);
-    if (savedRole === '1' || savedRole === 'ta') return router.createUrlTree(['/dashboard-ta']);
-
+    if (savedRole === '1' || savedRole === 'ta') return router.createUrlTree(['/ta-dashboard']); // بدلاً من dashboard-ta`
     return router.createUrlTree(['/dashboardstudent']);
   }
   return true;
@@ -42,7 +41,7 @@ export const roleGuard: CanActivateFn = (route) => {
 
   if (normalizedRole === 'admin') return router.createUrlTree(['/admin-dashboard']);
   if (normalizedRole === 'professor') return router.createUrlTree(['/dashboard']);
-  if (normalizedRole === 'ta') return router.createUrlTree(['/dashboard-ta']);
+if (normalizedRole === 'ta') return router.createUrlTree(['/ta-dashboard']); // بدلاً من dashboard-ta
   if (normalizedRole === 'student') return router.createUrlTree(['/dashboardstudent']);
 
   localStorage.clear();

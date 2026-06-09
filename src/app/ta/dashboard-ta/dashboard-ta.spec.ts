@@ -1,23 +1,24 @@
+// src/app/features/ta-dashboard/pages/dashboard-ta/dashboard-ta.spec.ts
+
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { TaDashboardComponent } from './dashboard-ta'; // 👈 حدثنا اسم الملف والـ Import الجديد
 
-import { DashboardTa } from './dashboard-ta';
-
-describe('DashboardTa', () => {
-  let component: DashboardTa;
-  let fixture: ComponentFixture<DashboardTa>;
+describe('TaDashboardComponent', () => {
+  let component: TaDashboardComponent;
+  let fixture: ComponentFixture<TaDashboardComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [DashboardTa]
+      imports: [TaDashboardComponent] // 👈 هنا بنختبر الكومبوننت الجديد كـ Standalone
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(DashboardTa);
+    fixture = TestBed.createComponent(TaDashboardComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
 
   it('should create', () => {
-    expect(component).toBeTruthy();
+    expect(component).toBeTruthy(); // التست الأساسي للتأكد إن الكومبوننت بيحصل له Initialize صح
   });
 });

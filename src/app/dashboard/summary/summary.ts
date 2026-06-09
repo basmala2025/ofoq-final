@@ -1,21 +1,9 @@
-import { Component, OnInit, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef, AfterViewInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { Chart } from 'chart.js/auto';
 import { CommonModule } from '@angular/common';
 import { Navbar } from '../navbar/navbar';
-
-export interface SessionSummary {
-  courseName: string;
-  roomName: string;
-  totalStudents: number;
-  presentStudents: number;
-  absentStudents: number;
-  attendanceRate: number;
-  averageFocus: number;
-  sessionDuration: string;
-  students: any[];
-  focusHistory: any[];
-}
+import { SummaryService, SessionSummary } from '../summary';
 
 @Component({
   selector: 'app-session-summary',
@@ -24,7 +12,7 @@ export interface SessionSummary {
   templateUrl: './summary.html',
   styleUrls: ['./summary.css']
 })
-export class SessionSummary implements OnInit, AfterViewInit {
+export class sessionSummaryData implements OnInit, AfterViewInit, OnDestroy {
 
   @ViewChild('focusTimelineCanvas') focusTimelineCanvas!: ElementRef<HTMLCanvasElement>;
   @ViewChild('attendancePieCanvas') attendancePieCanvas!: ElementRef<HTMLCanvasElement>;
@@ -48,12 +36,14 @@ export class SessionSummary implements OnInit, AfterViewInit {
 
   private charts: Chart[] = [];
 
-  constructor(private router: Router) {
-    const navigation = this.router.getCurrentNavigation();
-    this.summary = navigation?.extras?.state?.['summary'] || null;
-  }
+  constructor(
+    private router: Router,
+    private summaryService: SummaryService
+  ) {}
 
   ngOnInit(): void {
+    this.summary = this.summaryService.getSummary();
+
     if (!this.summary) {
       this.router.navigate(['/dashboard']);
       return;
@@ -86,18 +76,18 @@ export class SessionSummary implements OnInit, AfterViewInit {
   private calculateMetrics(): void {
     if (!this.summary) return;
 
-    const focusValues = this.summary.focusHistory.map(h => h.focus);
+    const focusValues = (this.summary as any).focusHistory?.map((h: any) => h.focus) || [this.summary.averageFocus];
     this.peakFocus = Math.round(Math.max(...focusValues));
     this.lowestFocus = Math.round(Math.min(...focusValues));
 
     // Calculate variance
-    const avg = focusValues.reduce((a, b) => a + b, 0) / focusValues.length;
-    const variance = focusValues.reduce((sum, val) => sum + Math.pow(val - avg, 2), 0) / focusValues.length;
+    const avg = focusValues.reduce((a: number, b: number) => a + b, 0) / focusValues.length;
+    const variance = focusValues.reduce((sum: number, val: number) => sum + Math.pow(val - avg, 2), 0) / focusValues.length;
     this.focusVariance = Math.round(Math.sqrt(variance));
 
-    // Calculate engagement score (weighted formula)
+    const attendanceRate = Math.round((this.summary.presentStudents / this.summary.totalStudents) * 100);
     this.engagementScore = Math.round(
-      (this.summary.attendanceRate * 0.3) +
+      (attendanceRate * 0.3) +
       (this.summary.averageFocus * 0.5) +
       ((100 - this.focusVariance) * 0.2)
     );
@@ -126,13 +116,17 @@ export class SessionSummary implements OnInit, AfterViewInit {
   }
 
   private createFocusTimelineChart(): void {
+    const focusHistory = (this.summary as any).focusHistory || [];
+
+    if (focusHistory.length === 0) return;
+
     const chart = new Chart(this.focusTimelineCanvas.nativeElement, {
       type: 'line',
       data: {
-        labels: this.summary!.focusHistory.map(h => h.time),
+        labels: focusHistory.map((h: any) => h.time),
         datasets: [{
           label: 'Focus Level',
-          data: this.summary!.focusHistory.map(h => h.focus),
+          data: focusHistory.map((h: any) => h.focus),
           borderColor: '#7113c8',
           backgroundColor: 'rgba(113, 19, 200, 0.1)',
           tension: 0.4,
@@ -144,7 +138,7 @@ export class SessionSummary implements OnInit, AfterViewInit {
           pointBorderWidth: 2
         }, {
           label: 'Average',
-          data: Array(this.summary!.focusHistory.length).fill(this.summary!.averageFocus),
+          data: Array(focusHistory.length).fill(this.summary!.averageFocus),
           borderColor: '#10b981',
           borderDash: [5, 5],
           borderWidth: 2,
@@ -215,7 +209,6 @@ export class SessionSummary implements OnInit, AfterViewInit {
                 const label = context.label || '';
                 const value = context.parsed;
                 const total = this.summary!.totalStudents;
-                // تم استخدام ?? 0 هنا لإصلاح خطأ TS18047
                 const percentage = Math.round(((value ?? 0) / total) * 100);
                 return `${label}: ${value} (${percentage}%)`;
               }
@@ -228,6 +221,8 @@ export class SessionSummary implements OnInit, AfterViewInit {
   }
 
   private createFocusRadarChart(): void {
+    const attendanceRate = Math.round((this.summary!.presentStudents / this.summary!.totalStudents) * 100);
+
     const chart = new Chart(this.focusRadarCanvas.nativeElement, {
       type: 'radar',
       data: {
@@ -235,7 +230,7 @@ export class SessionSummary implements OnInit, AfterViewInit {
         datasets: [{
           label: 'Session Metrics',
           data: [
-            this.summary!.attendanceRate,
+            attendanceRate,
             this.summary!.averageFocus,
             this.peakFocus,
             Math.max(0, 100 - this.focusVariance),
@@ -339,9 +334,11 @@ export class SessionSummary implements OnInit, AfterViewInit {
   exportToCSV(): void {
     if (!this.summary) return;
 
-    let csv = 'Student Name,Status\n';
-    this.summary.students.forEach(student => {
-      csv += `${student.name},${student.present ? 'Present' : 'Absent'}\n`;
+    let csv = 'Student Name,Status,Average Focus\n';
+    this.summary.students.forEach((student: any) => {
+      const status = student.present ? 'Present' : 'Absent';
+      const focus = student.averageFocus !== undefined ? `${student.averageFocus}%` : 'N/A';
+      csv += `${student.name},${status},${focus}\n`;
     });
 
     const blob = new Blob([csv], { type: 'text/csv' });
@@ -358,5 +355,7 @@ export class SessionSummary implements OnInit, AfterViewInit {
 
   ngOnDestroy(): void {
     this.charts.forEach(chart => chart.destroy());
+
+    this.summaryService.clearSummary();
   }
 }

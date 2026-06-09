@@ -1,0 +1,37 @@
+<nav class="navbar">
+  <a routerLink="/ta-dashboard" class="nav-logo">
+    <div class="nav-logo-mark">O</div>
+    <span class="nav-logo-text">OFOQ</span>
+  </a>
+
+  <div class="nav-sep"></div>
+
+  <ul class="nav-links">
+    <li>
+      <a routerLink="/ta-dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+         Home
+      </a>
+    </li>
+    <li>
+      <a routerLink="/ta-dashboard/course" routerLinkActive="active">
+        Course
+      </a>
+    </li>
+    <li>
+      <a routerLink="/ta-dashboard/results" routerLinkActive="active">
+      Results
+      </a>
+    </li>
+    <li>
+      <a routerLink="/ta-dashboard/exam-builder" routerLinkActive="active">
+        Builder
+      </a>
+    </li>
+  </ul>
+
+  <div class="nav-spacer"></div>
+
+  <div class="nav-avatar" [title]="'TA Profile'" (click)="onLogout()">
+    {{ userInitials() }}
+  </div>
+</nav>

@@ -1,17 +1,27 @@
 import { Injectable } from '@angular/core';
 
-interface StudentSummary {
+export interface StudentSummary {
   id: string;
   name: string;
   present: boolean;
   averageFocus: number;
 }
 
-interface SessionSummary {
+export interface FocusDataPoint {
+  time: string;
+  focus: number;
+}
+
+export interface SessionSummary {
+  courseName: string;
+  roomName: string;
   totalStudents: number;
   presentStudents: number;
   absentStudents: number;
+  attendanceRate: number;
   averageFocus: number;
+  sessionDuration: string;
+  focusHistory: FocusDataPoint[]; 
   students: StudentSummary[];
 }
 
@@ -30,4 +40,4 @@ export class SummaryService {
   clearSummary(): void {
     this.summary = null;
   }
-} 
+}

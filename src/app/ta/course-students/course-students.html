@@ -1,0 +1,84 @@
+<div class="students-container">
+  <button class="back-btn" (click)="onBackToCourse()">
+    ← Back to Course Dashboard
+  </button>
+
+  <div class="page-title-block">
+    👥 Enrolled Students Roster
+  </div>
+
+  <div class="controls-row">
+    <input
+      type="text"
+      class="search-input"
+      placeholder="Search by name or Academic ID..."
+      [ngModel]="searchTerm()"
+      (ngModelChange)="searchTerm.set($event)"
+    />
+    <div style="font-size: 13px; color: #64748b; font-weight: 600;">
+      Showing {{ filteredStudents().length }} of {{ students().length }} students
+    </div>
+  </div>
+
+  <div *ngIf="isLoading()" class="loading-placeholder" style="text-align: center; padding: 40px; color: #64748b;">
+    <p>Loading course enrollment rosters and sync checking behavioral risk matrices...</p>
+  </div>
+
+  <div *ngIf="!isLoading()" class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Student Details</th>
+          <th>Academic ID</th>
+          <th style="text-align: center;">Attended Exams</th>
+          <th style="text-align: center;">Average Grade</th>
+          <th style="text-align: center;">Proctoring Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (student of filteredStudents(); track student.id) {
+          <tr>
+            <td>
+              <strong class="student-display-name" style="color: #0f172a;">{{ student.name }}</strong>
+              <div class="student-meta-email">
+                {{ student.name.toLowerCase().replace(' ', '') }}@bu.edu.eg
+              </div>
+            </td>
+            <td>
+              <span class="mono">{{ student.academicId }}</span>
+            </td>
+            <td style="text-align: center; font-weight: 600;">
+              {{ student.riskStatus === 'Warning' ? 2 : 3 }}
+            </td>
+            <td style="text-align: center; font-weight: 700;">
+              <span [style.color]="student.riskStatus === 'Flagged' ? '#b91c1c' : '#5f369e'">
+                {{ student.riskStatus === 'Safe' ? '92%' : student.riskStatus === 'Warning' ? '78%' : '65%' }}
+              </span>
+            </td>
+            <td style="text-align: center;">
+              <span class="badge" [ngClass]="{
+                'badge-safe': student.riskStatus === 'Safe',
+                'badge-warning': student.riskStatus === 'Warning',
+                'badge-flagged': student.riskStatus === 'Flagged'
+              }">
+                {{ student.riskStatus }}
+              </span>
+            </td>
+            <td>
+              <button class="action-link" (click)="onBackToCourse()">
+                View Academic Profile
+              </button>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="6" class="text-center muted" style="padding: 40px; font-style: italic; text-align: center; color: #94a3b8;">
+              No student records matched your targeted search criteria.
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

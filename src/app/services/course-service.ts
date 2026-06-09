@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 @Injectable({
@@ -10,15 +10,23 @@ export class CourseService {
 
   constructor(private http: HttpClient) {}
 
-  getMyCourses(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/my`);
+  private getHeaders(): HttpHeaders {
+    const token = localStorage.getItem('token');
+    return new HttpHeaders({
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    });
   }
 
-  getAvailableCourses(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/available`);
+  getMyCourses(): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/my`, { headers: this.getHeaders() });
   }
 
- enrollInCourse(courseId: string): Observable<any> {
-    return this.http.post(`${this.apiUrl}/${courseId}/enroll`, {});
+  getAvailableCourses(): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/available`, { headers: this.getHeaders() });
+  }
+
+  enrollInCourse(courseId: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/${courseId}/enroll`, {}, { headers: this.getHeaders() });
   }
 }

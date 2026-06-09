@@ -29,6 +29,7 @@
     "@angular/material": "^20.2.14",
     "@angular/platform-browser": "^20.1.0",
     "@angular/router": "^20.1.0",
+    "@google/generative-ai": "^0.24.1",
     "@microsoft/signalr": "^10.0.0",
     "@monaco-editor/loader": "^1.7.0",
     "chart.js": "^4.5.1",

@@ -118,7 +118,7 @@ export class Login {
 
       case '1':
       case 'ta':
-        this.router.navigate(['/dashboard-ta']); // Matches TA specific routes
+        this.router.navigate(['/ta-dashboard']); // Matches TA specific routes
         break;
 
       case '0':
