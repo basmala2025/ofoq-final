@@ -62,9 +62,9 @@
 
               <div class="exam-action-zone">
                 @if(course.exam) {
-                  <button class="btn btn-primary btn-live-trigger" (click)="startExam(course.exam.examId)">
-                    Launch Exam <i class="fas fa-rocket"></i>
-                  </button>
+                 <button class="btn btn-primary btn-live-trigger" (click)="startExam(course.activeExamSessionId)">
+  Start Exam
+</button>
                 } @else {
                   <button class="btn btn-secondary" disabled>
                     No Scheduled Exams
