@@ -18,28 +18,24 @@ import loader from '@monaco-editor/loader';
 export class ExamEditorComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('editorContainer', { static: true }) editorContainer!: ElementRef;
 
-  // Exam Identification
-  examId!: string;
+  // 👇 تم التعديل هنا: استخدام sessionId بدل examId
+  sessionId!: string;
   editor: any;
   savedCodeKey = 'ofoq_exam_backup';
 
-  // Timer Variable for UI Tracking
   timerDisplay = '00:00';
-  private timerInterval: any; // Reference tracker to clear interval on component destruction
+  private timerInterval: any;
 
-  // Problem Properties Mapped from API
   problemTitle = 'Loading assessment...';
   problemDescription = '';
   allowedLanguage = 'cpp';
 
-  // Security and Integrity UI States
   violationCount = 0;
   consoleOutput = 'System output idle. Click "Run Code" to benchmark calculations.';
   compileMessage = '';
   isLoading = false;
 
   publicTestCases: any[] = [];
-  // Security Toast Overlay Configurations
   showSecurityToast = false;
   securityMessage = '';
   isRedAlarm = false;
@@ -53,45 +49,42 @@ export class ExamEditorComponent implements OnInit, AfterViewInit, OnDestroy {
   ) {}
 
   ngOnInit() {
-    // Extract exam ID parameter from the current active route sequence
-    this.examId = this.route.snapshot.paramMap.get('examId')!;
+    // 👇 جلب الـ sessionId من الـ URL أو كاحتياطي من الـ LocalStorage
+    this.sessionId = this.route.snapshot.paramMap.get('id') || this.route.snapshot.paramMap.get('examId') || localStorage.getItem('currentSessionId')!;
+
+    // حفظه كاحتياطي عشان لو الطالب عمل Refresh الصفحة متضربش
+    if(this.sessionId) {
+      localStorage.setItem('currentSessionId', this.sessionId);
+    }
+
     this.loadExamProblemDetails();
   }
 
   ngAfterViewInit() {
-    // Enforce fullscreen workspace configuration immediately upon visual initialization
     this.enterFullScreen();
   }
 
-  /**
-   * Fetches the technical specifications and constraints of the active assessment
-   */
-loadExamProblemDetails() {
+  loadExamProblemDetails() {
+    // 👇 استخدام this.sessionId لطلب التفاصيل (لثف يثفشهمس 😉)
+    this.examService.getExamDetails(this.sessionId).subscribe({
+      next: (res) => {
+        this.problemTitle = res.title || 'Untitled Assessment';
+        this.problemDescription = res.description || 'No descriptive tasks provided.';
 
-// 2. جوه ميثود loadExamProblemDetails وفي الـ next:
-this.examService.getExamDetails(this.examId).subscribe({
-  next: (res) => {
-    this.problemTitle = res.title || 'Untitled Assessment';
-    this.problemDescription = res.description || 'No descriptive tasks provided.';
+        this.publicTestCases = res.publicTestCases || [];
 
-    // 👇 السطر السحري لتخزين الـ Cases اللي جاية من الـ API
-    this.publicTestCases = res.publicTestCases || [];
+        const langLower = res.constraints?.allowedLanguage?.toLowerCase() || '';
+        this.allowedLanguage = langLower.includes('c++') || langLower.includes('cpp') ? 'cpp' : 'python';
 
-    const langLower = res.constraints?.allowedLanguage?.toLowerCase() || '';
-    this.allowedLanguage = langLower.includes('c++') || langLower.includes('cpp') ? 'cpp' : 'python';
+        const remainingSeconds = res.remainingSeconds || res.constraints?.timeLimitSec || 3600;
+        this.startTimerCountdown(remainingSeconds);
 
-    const remainingSeconds = res.remainingSeconds || res.constraints?.timeLimitSec || 3600;
-    this.startTimerCountdown(remainingSeconds);
-
-    this.initMonacoEditor();
-  },
-  // ...
-});
+        this.initMonacoEditor();
+      },
+      error: (err) => console.error("Error fetching exam details:", err)
+    });
   }
 
-  /**
-   * Orchestrates the active ticking timer system updating the interface sequentially
-   */
   startTimerCountdown(seconds: number) {
     if (this.timerInterval) clearInterval(this.timerInterval);
 
@@ -101,7 +94,7 @@ this.examService.getExamDetails(this.examId).subscribe({
       this.timerDisplay = `${minutes.toString().padStart(2, '0')}:${remainingSecs.toString().padStart(2, '0')}`;
     };
 
-    updateDisplay(seconds); // Trigger initial synchronization tick
+    updateDisplay(seconds);
 
     this.timerInterval = setInterval(() => {
       if (seconds > 0) {
@@ -110,14 +103,10 @@ this.examService.getExamDetails(this.examId).subscribe({
       } else {
         clearInterval(this.timerInterval);
         this.timerDisplay = "00:00";
-        this.forceSubmitAndExit(); // Automatic environmental submission lock upon time expiration
+        this.forceSubmitAndExit();
       }
     }, 1000);
   }
-
-  // =========================================================================
-  // 🔐 ANTI-CHEAT INTEGRITY HOOKS: Event Interceptions & Enforcement Routines
-  // =========================================================================
 
   @HostListener('document:contextmenu', ['$event'])
   preventRightClick(e: MouseEvent) {
@@ -142,15 +131,13 @@ this.examService.getExamDetails(this.examId).subscribe({
     }
   }
 
-  /**
-   * Flags anti-cheat metrics to backend system and evaluates the execution of a forced lock out
-   */
   triggerViolation(type: string) {
-    this.examService.logTabSwitch(this.examId).subscribe({
+    // 👇 إرسال الـ sessionId لتسجيل محاولة الغش
+    this.examService.logTabSwitch(this.sessionId).subscribe({
       next: (res: any) => {
         this.violationCount = res.currentViolationCount;
 
-        // Condition evaluation to invoke immediate termination protocol upon 3rd anomaly
+        // ميكانيزم التحذير قبل تطبيق العقوبة (زي ما طلبتي في إعدادات النظام)
         if (res.shouldTerminate) {
           this.isRedAlarm = true;
           this.securityMessage = res.serverMessage || 'Integrity threshold breached. Session revoked.';
@@ -160,7 +147,6 @@ this.examService.getExamDetails(this.examId).subscribe({
             this.forceSubmitAndExit();
           }, 3000);
         } else {
-          // Warning notifications tracking the incremental thresholds
           this.securityMessage = `⚠️ Security Warning: ${type}. Violations: ${this.violationCount}/3. Deduction Imposed: ${res.integrityScoreDeduction}`;
           this.isRedAlarm = false;
           this.showSecurityToast = true;
@@ -169,10 +155,6 @@ this.examService.getExamDetails(this.examId).subscribe({
       }
     });
   }
-
-  // =========================================================================
-  // 💻 SANDBOX COMPILATION CORES: Monaco Configuration & Judge0 Routing Pipes
-  // =========================================================================
 
   initMonacoEditor() {
     loader.init().then((monaco: any) => {
@@ -195,16 +177,15 @@ this.examService.getExamDetails(this.examId).subscribe({
     });
   }
 
-  /**
-   * Dispatches current localized workspace matrix to the sandboxed Judge0 execution nodes
-   */
   runCode() {
     if (!this.editor) return;
     this.isLoading = true;
     this.consoleOutput = 'Compiling and executing code on sandbox container...';
 
     const sourceCode = this.editor.getValue();
-    this.examService.runSandbox(this.examId, sourceCode, this.allowedLanguage).subscribe({
+
+    // 👇 تنفيذ الكود بناءً على الـ sessionId
+    this.examService.runSandbox(this.sessionId, sourceCode, this.allowedLanguage).subscribe({
       next: (res) => {
         this.compileMessage = res.compileOutput;
         this.consoleOutput = res.isPassed
@@ -219,32 +200,28 @@ this.examService.getExamDetails(this.examId).subscribe({
     });
   }
 
-  /**
-   * Standard formal code evaluation submission sequence triggered directly by student intent
-   */
   submitSolution() {
     if (!this.editor) return;
     if (!confirm('Are you sure you want to finalize your submission? This locks your grade calculation.')) return;
 
     const sourceCode = this.editor.getValue();
-    this.examService.submitExam(this.examId, sourceCode).subscribe({
+
+    // 👇 الإرسال النهائي بالـ sessionId
+    this.examService.submitExam(this.sessionId, sourceCode).subscribe({
       next: (res) => {
         this.cleanupEnvironment();
-        this.router.navigate(['/exam/result', this.examId]);
+        this.router.navigate(['/exam/result', this.sessionId]);
       },
       error: (err) => console.error('Finalization request crashed:', err)
     });
   }
 
-  /**
-   * Security enforcement script forcing payload delivery and locking context on critical alarms
-   */
   forceSubmitAndExit() {
     const backupCode = this.editor ? this.editor.getValue() : (localStorage.getItem(this.savedCodeKey) || '');
-    this.examService.submitExam(this.examId, backupCode).subscribe({
+    this.examService.submitExam(this.sessionId, backupCode).subscribe({
       next: () => {
         this.cleanupEnvironment();
-        this.router.navigate(['/exam/result', this.examId]);
+        this.router.navigate(['/exam/result', this.sessionId]);
       },
       error: () => {
         this.cleanupEnvironment();
@@ -264,7 +241,6 @@ this.examService.getExamDetails(this.examId).subscribe({
   }
 
   ngOnDestroy() {
-    // Teardown ticking threads to block application frame leakage and performance drag
     if (this.timerInterval) clearInterval(this.timerInterval);
     this.cleanupEnvironment();
   }

@@ -22,7 +22,6 @@ export class ExamService {
     });
   }
 
-  // 📡 [SignalR] تشغيل مستمع الـ WebSocket للطالب عند فتح الـ Dashboard
   initExamNotificationHub() {
     const token = localStorage.getItem('token');
     if (!token) return;
@@ -45,24 +44,26 @@ export class ExamService {
     });
   }
 
-  getExamDetails(examId: string): Observable<any> {
-    return this.http.get(`${this.baseUrl}/details/${examId}`, { headers: this.getHeaders() });
+  // 👇 1. تعديل ميثود الـ getDetails عشان تاخد الـ sessionId في الـ URL
+  getExamDetails(sessionId: string): Observable<any> {
+    return this.http.get(`${this.baseUrl}/details/${sessionId}`, { headers: this.getHeaders() });
   }
 
-  logTabSwitch(examId: string): Observable<any> {
-    return this.http.post(`${this.baseUrl}/log-tab-switch`, { examId }, { headers: this.getHeaders() });
+  // 👇 2. تعديل باقي الريكويستات عشان تبعت الـ session_id في الـ Body
+  logTabSwitch(sessionId: string): Observable<any> {
+    return this.http.post(`${this.baseUrl}/log-tab-switch`, { session_id: sessionId }, { headers: this.getHeaders() });
   }
 
-  runSandbox(examId: string, sourceCode: string, language: string): Observable<any> {
-    return this.http.post(`${this.baseUrl}/run-sandbox`, { examId, sourceCode, language }, { headers: this.getHeaders() });
+  runSandbox(sessionId: string, sourceCode: string, language: string): Observable<any> {
+    return this.http.post(`${this.baseUrl}/run-sandbox`, { session_id: sessionId, sourceCode, language }, { headers: this.getHeaders() });
   }
 
-  submitExam(examId: string, sourceCode: string): Observable<any> {
-    return this.http.post(`${this.baseUrl}/submit/${examId}`, { sourceCode }, { headers: this.getHeaders() });
+  submitExam(sessionId: string, sourceCode: string): Observable<any> {
+    return this.http.post(`${this.baseUrl}/submit/${sessionId}`, { sourceCode }, { headers: this.getHeaders() });
   }
 
-  getExamResult(examId: string, studentId?: string): Observable<any> {
-    let url = `${this.baseUrl}/result/${examId}`;
+  getExamResult(sessionId: string, studentId?: string): Observable<any> {
+    let url = `${this.baseUrl}/result/${sessionId}`;
     if (studentId) url += `?studentId=${studentId}`;
     return this.http.get(url, { headers: this.getHeaders() });
   }
