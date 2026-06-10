@@ -18,7 +18,8 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
       </div>
 
       <div class="verify-content">
-        <p class="instruction">Look at the camera to verify your identity</p>
+        <p class="instruction">"Look at the camera to verify your identity. <br>
+         Ensure your face is centered, and not too close or too far."</p>
 
         <div class="camera-section">
           <div class="camera-gradient-ring" [class.analyzing-ring]="isVerifying">
@@ -404,7 +405,7 @@ async initCamera() {
     window.history.back();
   }
 
-  startVerification() {
+ startVerification() {
     if (!this.isCameraReady || this.isVerifying) return;
 
     this.isVerifying = true;
@@ -443,6 +444,7 @@ async initCamera() {
     const startX = (vidW - portraitWidth) / 2;
 
     const captureInterval = setInterval(() => {
+      // عندما نصل لـ 5 فريمات، يتم إيقاف التجميع وإرسال اللستة كاملة في ريكويست واحد
       if (frameCount >= 5) {
         clearInterval(captureInterval);
         this.successMessage = " Syncing biometric data with OFOQ AI Server...";
@@ -464,21 +466,21 @@ async initCamera() {
           frameCount++;
           this.successMessage = `Capturing secure biological frames (${frameCount}/5)...`;
 
-          const blobUrl = URL.createObjectURL(blob);
-          const downloadLink = document.createElement('a');
-          downloadLink.href = blobUrl;
-          downloadLink.download = `Ofoq_Frame_${frameCount}.jpg`;
-          document.body.appendChild(downloadLink);
-          downloadLink.click();
-          document.body.removeChild(downloadLink);
-          URL.revokeObjectURL(blobUrl);
-          // ───────────────────────────────────────────
+          // // كود التحميل التلقائي (تأكد من إلغائه في البيئة الإنتاجية Production منعاً لإزعاج المستخدم)
+          // const blobUrl = URL.createObjectURL(blob);
+          // const downloadLink = document.createElement('a');
+          // downloadLink.href = blobUrl;
+          // downloadLink.download = `Ofoq_Frame_${frameCount}.jpg`;
+          // document.body.appendChild(downloadLink);
+          // downloadLink.click();
+          // document.body.removeChild(downloadLink);
+          // URL.revokeObjectURL(blobUrl);
 
           this.cdr.detectChanges();
         }
       }, 'image/jpeg', 0.95);
 
-    }, 700);
+    }, 400); // 💡 تم التعديل هنا إلى 400ms لالتقاط فريم كل 0.4 ثانية
   }
 
   private sendFivePhotosToApi(blobs: Blob[], token: string) {
@@ -496,7 +498,6 @@ async initCamera() {
     this.http.post<any>(url, formData, { headers }).subscribe({
       next: (res) => {
         this.isVerifying = false;
-
         if (res.verified === true || res.verified === 'true') {
           this.errorMessage = null;
           this.successMessage = "⚡ [OFOQ AI Core] Identity Verified successfully! Match Score: " + (res.matchScore || '94.8%');
