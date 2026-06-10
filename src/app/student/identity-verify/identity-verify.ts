@@ -518,60 +518,57 @@ export class IdentityVerifyComponent implements OnInit, AfterViewInit, OnDestroy
     }, 400);
   }
 
-  private sendFivePhotosToApi(blobs: Blob[], token: string) {
-    const formData = new FormData();
+ private sendFivePhotosToApi(blobs: Blob[], token: string) {
+  const formData = new FormData();
 
-    blobs.forEach((blob, index) => {
-      formData.append('frames', blob, `frame_${index + 1}.jpg`);
-    });
+  blobs.forEach((blob, index) => {
+    formData.append('frames', blob, `frame_${index + 1}.jpg`);
+  });
 
-    const activeId = this.examId || localStorage.getItem('currentSessionId') || '';
-    formData.append('activeExamSessionId', activeId);
+  // 🔥 التعديل هنا: خلينا الاسم session_id زي ما الباك إند مستني
+  const activeId = this.examId || localStorage.getItem('currentSessionId') || '';
+  formData.append('session_id', activeId);
 
-    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
-    const url = `https://ofoqai.runasp.net/api/v1/exam/verify-entry`;
+  const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+  const url = `https://ofoqai.runasp.net/api/v1/exam/verify-entry`;
 
-    this.http.post<any>(url, formData, { headers }).subscribe({
-      next: (res) => {
-        this.isVerifying = false;
-        if (res.verified === true || res.verified === 'true') {
-          this.errorMessage = null;
-          this.successMessage = "⚡ Identity Verified successfully! Access granted.";
+  this.http.post<any>(url, formData, { headers }).subscribe({
+    next: (res) => {
+      this.isVerifying = false;
+      if (res.verified === true || res.verified === 'true') {
+        this.errorMessage = null;
+        this.successMessage = "⚡ Identity Verified successfully! Access granted.";
 
-          this.serverSessionId = res.session_id;
+        this.serverSessionId = res.session_id;
 
-          if (res.session_id) {
-            localStorage.setItem('currentSessionId', res.session_id);
-          }
-          if (res.remaining_seconds) {
-             localStorage.setItem('examRemainingSeconds', res.remaining_seconds.toString());
-          }
-          if (res.exam_title) {
-             localStorage.setItem('examTitle', res.exam_title);
-          }
-
-          // تم إغلاق الكاميرا وإظهار زر بدء الامتحان بنجاح
-          this.turnOffCamera();
-          this.isVerificationSuccessful = true;
-          this.cdr.detectChanges();
-
-          // تم إزالة الانتقال التلقائي (setTimeout) لإعطاء المستخدم فرصة الضغط على "Start Exam Now"
-
-        } else {
-          this.successMessage = null;
-          this.errorMessage = res.message || "Identity mismatch. Please center your face and try again.";
+        if (res.session_id) {
+          localStorage.setItem('currentSessionId', res.session_id);
         }
+        if (res.remaining_seconds) {
+           localStorage.setItem('examRemainingSeconds', res.remaining_seconds.toString());
+        }
+        if (res.exam_title) {
+           localStorage.setItem('examTitle', res.exam_title);
+        }
+
+        this.turnOffCamera();
+        this.isVerificationSuccessful = true;
         this.cdr.detectChanges();
-      },
-      error: (err) => {
-        console.error('Biometric validation crashed:', err);
-        this.isVerifying = false;
+      } else {
         this.successMessage = null;
-        this.errorMessage = "Biometric sync timeout. Please verify configuration.";
-        this.cdr.detectChanges();
+        this.errorMessage = res.message || "Identity mismatch. Please center your face and try again.";
       }
-    });
-  }
+      this.cdr.detectChanges();
+    },
+    error: (err) => {
+      console.error('Biometric validation crashed:', err);
+      this.isVerifying = false;
+      this.successMessage = null;
+      this.errorMessage = "Biometric sync timeout. Please verify configuration.";
+      this.cdr.detectChanges();
+    }
+  });
+}
 
   startActualExam() {
     const finalSessionId = this.serverSessionId || localStorage.getItem('currentSessionId') || this.examId;
