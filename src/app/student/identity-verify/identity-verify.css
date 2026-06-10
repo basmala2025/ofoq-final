@@ -1,150 +1,242 @@
-/* ==========================================
-   Main Wrapper & Card Layout
-========================================== */
-.verify-wrapper {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-  background-color: #f4f7f9; /* لون خلفية هادي */
-  padding: 20px;
-  font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-}
 
-.verify-card {
-  background: #ffffff;
-  border-radius: 16px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-  padding: 40px 30px;
-  max-width: 500px;
-  width: 100%;
-  text-align: center;
-  border-top: 4px solid #2563eb; /* لمسة زرقاء تقنية من فوق */
-}
+    :host {
+      --ofoq-purple: #7b2cbf;
+      --ofoq-orange: #f26f21;
+      --bg-color: #e9ecef;
+      --text-dark: #2b2d42;
+      --text-muted: #6c757d;
+      --success: #2ecc71;
+      --error: #e74c3c;
+    }
 
-.verify-card h2 {
-  color: #1e293b;
-  margin-top: 0;
-  margin-bottom: 8px;
-  font-size: 1.5rem;
-  font-weight: 700;
-}
+    .verify-wrapper {
+      min-height: 100vh;
+      background-color: var(--bg-color);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-bottom: 30px;
+    }
 
-.verify-card p {
-  color: #64748b;
-  margin-bottom: 24px;
-  font-size: 0.95rem;
-  line-height: 1.5;
-}
+    .app-header {
+      width: 100%;
+      max-width: 500px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px;
+      margin-bottom: 10px;
+    }
 
-/* ==========================================
-   Camera Container
-========================================== */
-.camera-box {
-  position: relative;
-  width: 100%;
-  max-width: 320px;
-  height: 320px; /* شكل مربع عشان يركز على الوجه */
-  margin: 0 auto 30px;
-  background: #e2e8f0;
-  border-radius: 50%; /* شكل دائري مودرن (ممكن تخليه 12px لو حباه مربع) */
-  overflow: hidden;
-  box-shadow: inset 0 4px 6px rgba(0,0,0,0.1), 0 4px 15px rgba(0,0,0,0.05);
-  border: 4px solid #f8fafc;
-}
+    .app-header h2 {
+      margin: 0;
+      font-size: 1.2rem;
+      color: var(--text-dark);
+      font-weight: 700;
+    }
 
-.camera-box video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transform: scaleX(-1); /* مهم جداً: بيعكس الكاميرا كأنها مراية */
-}
+    .back-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text-dark);
+      padding: 0;
+      display: flex;
+    }
 
-.hidden {
-  display: none !important;
-}
+    .verify-content {
+      width: 100%;
+      max-width: 400px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0 20px;
+    }
 
-/* ==========================================
-   Placeholders & Errors
-========================================== */
-.camera-placeholder, .camera-error {
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  background: rgba(226, 232, 240, 0.95);
-  color: #334155;
-  z-index: 10;
-  font-weight: 600;
-}
+    .instruction {
+      color: var(--text-muted);
+      font-size: 1rem;
+      margin-bottom: 40px;
+      text-align: center;
+    }
 
-.camera-error {
-  background: rgba(254, 226, 226, 0.95);
-  color: #dc2626;
-}
+    /* Camera Ring Styles */
+    .camera-section {
+      margin-bottom: 40px;
+    }
 
-/* ==========================================
-   AI Scanner Animation
-========================================== */
-.scanner {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 3px;
-  background: #10b981; /* خط ليزر أخضر */
-  box-shadow: 0 0 15px #10b981, 0 0 30px #10b981;
-  z-index: 20;
-  animation: scan 2s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
-}
+    .camera-gradient-ring {
+      padding: 6px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--ofoq-purple), var(--ofoq-orange));
+      box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+      transition: transform 0.3s ease;
+    }
 
-@keyframes scan {
-  0% { top: 0; opacity: 0; }
-  10% { opacity: 1; }
-  90% { opacity: 1; }
-  100% { top: calc(100% - 3px); opacity: 0; }
-}
+    .camera-gradient-ring.analyzing-ring {
+      animation: pulse-ring 1.5s infinite;
+    }
 
-/* ==========================================
-   Button Styling
-========================================== */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 14px 28px;
-  font-size: 1rem;
-  font-weight: 600;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  width: 100%;
-  max-width: 320px;
-  letter-spacing: 0.5px;
-}
+    @keyframes pulse-ring {
+      0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(123, 44, 191, 0.4); }
+      70% { transform: scale(1.02); box-shadow: 0 0 0 15px rgba(123, 44, 191, 0); }
+      100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(123, 44, 191, 0); }
+    }
 
-.btn-primary {
-  background-color: #2563eb;
-  color: white;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
-}
+    .camera-box {
+      width: 250px;
+      height: 250px;
+      border-radius: 50%;
+      overflow: hidden;
+      background-color: #fff;
+      position: relative;
+    }
 
-.btn-primary:hover:not(:disabled) {
-  background-color: #1d4ed8;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.4);
-}
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform: scaleX(-1); /* Mirror view for comfort */
+    }
 
-.btn-primary:active:not(:disabled) {
-  transform: translateY(0);
-}
+    .hidden {
+      display: none;
+    }
 
-.btn-primary:disabled {
-  background-color: #94a3b8;
-  color: #e2e8f0;
-  cursor: not-allowed;
-  box-shadow: none;
-}
+    .camera-placeholder {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: #f8f9fa;
+      color: var(--text-muted);
+    }
+
+    .error-text {
+      color: var(--error);
+      font-weight: bold;
+    }
+
+    .spinner {
+      border: 4px solid rgba(0, 0, 0, 0.1);
+      border-top: 4px solid var(--ofoq-purple);
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .scanner-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(to bottom, transparent, rgba(123, 44, 191, 0.3), transparent);
+      animation: scan 2s linear infinite;
+    }
+
+    @keyframes scan {
+      0% { transform: translateY(-100%); }
+      100% { transform: translateY(100%); }
+    }
+
+    /* Status Card Styles */
+    .status-card {
+      width: 100%;
+      background: #d8dadd;
+      border-radius: 16px;
+      padding: 15px 20px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+
+    .status-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background-color: #95a5a6;
+    }
+
+    .status-dot.ready {
+      background-color: var(--ofoq-purple);
+    }
+
+    .status-dot.analyzing {
+      background-color: var(--ofoq-orange);
+      animation: blink 1s infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .status-text h3 {
+      margin: 0 0 4px 0;
+      font-size: 1rem;
+      color: var(--text-dark);
+    }
+
+    .status-text p {
+      margin: 0;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    /* Message Banners */
+    .message-banner {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      text-align: center;
+      font-weight: 600;
+      font-size: 0.9rem;
+      margin-bottom: 15px;
+    }
+
+    .message-banner.success {
+      background-color: rgba(46, 204, 113, 0.15);
+      color: var(--success);
+    }
+
+    .message-banner.error {
+      background-color: rgba(231, 76, 60, 0.15);
+      color: var(--error);
+    }
+
+    /* Action Button */
+    .btn-verify {
+      width: 100%;
+      padding: 16px;
+      border: none;
+      border-radius: 12px;
+      background: linear-gradient(to right, var(--ofoq-orange), var(--ofoq-purple));
+      color: white;
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(123, 44, 191, 0.3);
+      transition: transform 0.2s, opacity 0.2s;
+    }
+
+    .btn-verify:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+
+    .btn-verify:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }

@@ -1,12 +1,9 @@
-import { Component, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewInit, ChangeDetectorRef } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { Router, ActivatedRoute } from '@angular/router';
+import { Component, OnInit, AfterViewInit, OnDestroy, ElementRef, ViewChild, ChangeDetectorRef } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 
 @Component({
   selector: 'app-identity-verify',
-  standalone: true,
-  imports: [CommonModule],
   template: `
     <div class="verify-wrapper">
       <div class="app-header">
@@ -18,8 +15,10 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
       </div>
 
       <div class="verify-content">
-        <p class="instruction">"Look at the camera to verify your identity. <br>
-         Ensure your face is centered, and not too close or too far."</p>
+        <p class="instruction">
+          Look at the camera to verify your identity. <br>
+          Ensure your face is centered, and not too close or too far.
+        </p>
 
         <div class="camera-section">
           <div class="camera-gradient-ring" [class.analyzing-ring]="isVerifying">
@@ -55,268 +54,23 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
           {{ errorMessage }}
         </div>
 
-       <button *ngIf="!isVerificationSuccessful"
-        class="btn-verify"
-        (click)="startVerification()"
-        [disabled]="isVerifying || !isCameraReady">
-  {{ isVerifying ? 'Processing...' : 'Start Verification' }}
-</button>
+        <button *ngIf="!isVerificationSuccessful"
+                class="btn-verify"
+                (click)="startVerification()"
+                [disabled]="isVerifying || !isCameraReady">
+          {{ isVerifying ? 'Processing...' : 'Start Verification' }}
+        </button>
 
-<button *ngIf="isVerificationSuccessful"
-        class="btn-verify"
-        style="background: linear-gradient(to right, #2ecc71, #27ae60); box-shadow: 0 4px 15px rgba(46, 204, 113, 0.4);"
-        (click)="startActualExam()">
-  Start Exam Now
-</button>
+        <button *ngIf="isVerificationSuccessful"
+                class="btn-verify"
+                style="background: linear-gradient(to right, #2ecc71, #27ae60); box-shadow: 0 4px 15px rgba(46, 204, 113, 0.4);"
+                (click)="startActualExam()">
+          Start Exam Now
+        </button>
       </div>
     </div>
-  `,
-  styles: [`
-    :host {
-      --ofoq-purple: #7b2cbf;
-      --ofoq-orange: #f26f21;
-      --bg-color: #e9ecef;
-      --text-dark: #2b2d42;
-      --text-muted: #6c757d;
-      --success: #2ecc71;
-      --error: #e74c3c;
-    }
-
-    .verify-wrapper {
-      min-height: 100vh;
-      background-color: var(--bg-color);
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding-bottom: 30px;
-    }
-
-    .app-header {
-      width: 100%;
-      max-width: 500px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 20px;
-      margin-bottom: 10px;
-    }
-
-    .app-header h2 {
-      margin: 0;
-      font-size: 1.2rem;
-      color: var(--text-dark);
-      font-weight: 700;
-    }
-
-    .back-btn {
-      background: none;
-      border: none;
-      cursor: pointer;
-      color: var(--text-dark);
-      padding: 0;
-      display: flex;
-    }
-
-    .verify-content {
-      width: 100%;
-      max-width: 400px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 0 20px;
-    }
-
-    .instruction {
-      color: var(--text-muted);
-      font-size: 1rem;
-      margin-bottom: 40px;
-      text-align: center;
-    }
-
-    /* Camera Ring Styles */
-    .camera-section {
-      margin-bottom: 40px;
-    }
-
-    .camera-gradient-ring {
-      padding: 6px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, var(--ofoq-purple), var(--ofoq-orange));
-      box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-      transition: transform 0.3s ease;
-    }
-
-    .camera-gradient-ring.analyzing-ring {
-      animation: pulse-ring 1.5s infinite;
-    }
-
-    @keyframes pulse-ring {
-      0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(123, 44, 191, 0.4); }
-      70% { transform: scale(1.02); box-shadow: 0 0 0 15px rgba(123, 44, 191, 0); }
-      100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(123, 44, 191, 0); }
-    }
-
-    .camera-box {
-      width: 250px;
-      height: 250px;
-      border-radius: 50%;
-      overflow: hidden;
-      background-color: #fff;
-      position: relative;
-    }
-
-    video {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      transform: scaleX(-1); /* Mirror view for comfort */
-    }
-
-    .hidden {
-      display: none;
-    }
-
-    .camera-placeholder {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      background: #f8f9fa;
-      color: var(--text-muted);
-    }
-
-    .error-text {
-      color: var(--error);
-      font-weight: bold;
-    }
-
-    .spinner {
-      border: 4px solid rgba(0, 0, 0, 0.1);
-      border-top: 4px solid var(--ofoq-purple);
-      border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      animation: spin 1s linear infinite;
-    }
-
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-
-    .scanner-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(to bottom, transparent, rgba(123, 44, 191, 0.3), transparent);
-      animation: scan 2s linear infinite;
-    }
-
-    @keyframes scan {
-      0% { transform: translateY(-100%); }
-      100% { transform: translateY(100%); }
-    }
-
-    /* Status Card Styles */
-    .status-card {
-      width: 100%;
-      background: #d8dadd;
-      border-radius: 16px;
-      padding: 15px 20px;
-      display: flex;
-      align-items: center;
-      gap: 15px;
-      margin-bottom: 30px;
-    }
-
-    .status-dot {
-      width: 14px;
-      height: 14px;
-      border-radius: 50%;
-      background-color: #95a5a6;
-    }
-
-    .status-dot.ready {
-      background-color: var(--ofoq-purple);
-    }
-
-    .status-dot.analyzing {
-      background-color: var(--ofoq-orange);
-      animation: blink 1s infinite;
-    }
-
-    @keyframes blink {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
-    }
-
-    .status-text h3 {
-      margin: 0 0 4px 0;
-      font-size: 1rem;
-      color: var(--text-dark);
-    }
-
-    .status-text p {
-      margin: 0;
-      font-size: 0.85rem;
-      color: var(--text-muted);
-    }
-
-    /* Message Banners */
-    .message-banner {
-      width: 100%;
-      padding: 12px;
-      border-radius: 8px;
-      text-align: center;
-      font-weight: 600;
-      font-size: 0.9rem;
-      margin-bottom: 15px;
-    }
-
-    .message-banner.success {
-      background-color: rgba(46, 204, 113, 0.15);
-      color: var(--success);
-    }
-
-    .message-banner.error {
-      background-color: rgba(231, 76, 60, 0.15);
-      color: var(--error);
-    }
-
-    /* Action Button */
-    .btn-verify {
-      width: 100%;
-      padding: 16px;
-      border: none;
-      border-radius: 12px;
-      background: linear-gradient(to right, var(--ofoq-orange), var(--ofoq-purple));
-      color: white;
-      font-size: 1.1rem;
-      font-weight: 700;
-      cursor: pointer;
-      box-shadow: 0 4px 15px rgba(123, 44, 191, 0.3);
-      transition: transform 0.2s, opacity 0.2s;
-    }
-
-    .btn-verify:active:not(:disabled) {
-      transform: scale(0.98);
-    }
-
-    .btn-verify:disabled {
-      opacity: 0.7;
-      cursor: not-allowed;
-    }
-  `]
+  `
 })
-
-
 export class IdentityVerifyComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('videoElement') videoElement!: ElementRef<HTMLVideoElement>;
   @ViewChild('canvasElement') canvasElement!: ElementRef<HTMLCanvasElement>;
@@ -329,6 +83,9 @@ export class IdentityVerifyComponent implements OnInit, AfterViewInit, OnDestroy
   errorMessage: string | null = null;
   successMessage: string | null = null;
 
+  // سنخزن الـ session_id الجديد الراجع من سرفر الفيريفاي هنا
+  serverSessionId: string | null = null;
+
   private mediaStream: MediaStream | null = null;
 
   constructor(
@@ -339,23 +96,22 @@ export class IdentityVerifyComponent implements OnInit, AfterViewInit, OnDestroy
   ) {}
 
   ngOnInit() {
-    this.examId = this.route.snapshot.paramMap.get('examId');
-    console.log('Exam ID fetched for verification:', this.examId);
+    // جلب الـ ID من الرابط (سواء كان اسمه examId أو id)
+    this.examId = this.route.snapshot.paramMap.get('examId') || this.route.snapshot.paramMap.get('id');
+    console.log('Exam ID fetched from route:', this.examId);
   }
 
   ngAfterViewInit() {
     setTimeout(() => this.initCamera(), 500);
   }
-async initCamera() {
+
+  async initCamera() {
     this.errorMessage = null;
     this.successMessage = null;
     try {
       const initialStream = await navigator.mediaDevices.getUserMedia({ video: true });
-
       const devices = await navigator.mediaDevices.enumerateDevices();
       const videoDevices = devices.filter(device => device.kind === 'videoinput');
-
-      console.log("جميع الكاميرات المكتشفة في الجهاز:", videoDevices.map(d => d.label));
 
       let laptopCamera = videoDevices.find(device =>
         (device.label.toLowerCase().includes('integrated') ||
@@ -382,8 +138,6 @@ async initCamera() {
         audio: false
       };
 
-      console.log(" [OFOQ Camera Core] الكاميرا التي تم الاستقرار عليها وتشغيلها:", laptopCamera?.label || "Default");
-
       this.mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
 
       if (this.videoElement && this.videoElement.nativeElement) {
@@ -405,7 +159,7 @@ async initCamera() {
     window.history.back();
   }
 
- startVerification() {
+  startVerification() {
     if (!this.isCameraReady || this.isVerifying) return;
 
     this.isVerifying = true;
@@ -444,10 +198,9 @@ async initCamera() {
     const startX = (vidW - portraitWidth) / 2;
 
     const captureInterval = setInterval(() => {
-      // عندما نصل لـ 5 فريمات، يتم إيقاف التجميع وإرسال اللستة كاملة في ريكويست واحد
       if (frameCount >= 5) {
         clearInterval(captureInterval);
-        this.successMessage = " Syncing biometric data with OFOQ AI Server...";
+        this.successMessage = "Syncing biometric data with OFOQ AI Server...";
         this.cdr.detectChanges();
 
         this.sendFivePhotosToApi(capturedBlobs, token);
@@ -465,22 +218,11 @@ async initCamera() {
           capturedBlobs.push(blob);
           frameCount++;
           this.successMessage = `Capturing secure biological frames (${frameCount}/5)...`;
-
-          // // كود التحميل التلقائي (تأكد من إلغائه في البيئة الإنتاجية Production منعاً لإزعاج المستخدم)
-          // const blobUrl = URL.createObjectURL(blob);
-          // const downloadLink = document.createElement('a');
-          // downloadLink.href = blobUrl;
-          // downloadLink.download = `Ofoq_Frame_${frameCount}.jpg`;
-          // document.body.appendChild(downloadLink);
-          // downloadLink.click();
-          // document.body.removeChild(downloadLink);
-          // URL.revokeObjectURL(blobUrl);
-
           this.cdr.detectChanges();
         }
       }, 'image/jpeg', 0.95);
 
-    }, 400); // 💡 تم التعديل هنا إلى 400ms لالتقاط فريم كل 0.4 ثانية
+    }, 400);
   }
 
   private sendFivePhotosToApi(blobs: Blob[], token: string) {
@@ -490,7 +232,9 @@ async initCamera() {
       formData.append('frames', blob, `frame_${index + 1}.jpg`);
     });
 
-    formData.append('session_id', this.examId || localStorage.getItem('currentSessionId') || '');
+    // 💡 التعديل الأول: إرسال المتغير بالاسم الصحيح الذي يتوقعه الـ API
+    const activeId = this.examId || localStorage.getItem('currentSessionId') || '';
+    formData.append('activeExamSessionId', activeId);
 
     const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
     const url = `https://ofoqai.runasp.net/api/v1/exam/verify-entry`;
@@ -500,10 +244,13 @@ async initCamera() {
         this.isVerifying = false;
         if (res.verified === true || res.verified === 'true') {
           this.errorMessage = null;
-          this.successMessage = "⚡ [OFOQ AI Core] Identity Verified successfully! Match Score: " + (res.matchScore || '94.8%');
+          this.successMessage = "⚡ Identity Verified successfully! Access granted.";
 
-          if (res.session_id || this.examId) {
-            localStorage.setItem('currentSessionId', res.session_id || this.examId!);
+          // 💡 التعديل الثاني: حفظ الـ session_id الجديد المرجّع من الباك إند
+          this.serverSessionId = res.session_id;
+
+          if (res.session_id) {
+            localStorage.setItem('currentSessionId', res.session_id);
           }
           if (res.remaining_seconds) {
              localStorage.setItem('examRemainingSeconds', res.remaining_seconds.toString());
@@ -515,13 +262,14 @@ async initCamera() {
           this.turnOffCamera();
           this.isVerificationSuccessful = true;
 
+          // الانتقال التلقائي بعد 400ms أو ينتظر ضغطة الزر
           setTimeout(() => {
             this.startActualExam();
           }, 400);
 
         } else {
           this.successMessage = null;
-          this.errorMessage = res.message || "Identity mismatch. Please center your face in the sensor framework and try again.";
+          this.errorMessage = res.message || "Identity mismatch. Please center your face and try again.";
         }
         this.cdr.detectChanges();
       },
@@ -529,40 +277,42 @@ async initCamera() {
         console.error('Biometric validation crashed:', err);
         this.isVerifying = false;
         this.successMessage = null;
-        this.errorMessage = "Biometric sync timeout or network barrier. Please verify sensor configuration.";
+        this.errorMessage = "Biometric sync timeout. Please verify configuration.";
         this.cdr.detectChanges();
       }
     });
   }
 
   startActualExam() {
-    const sessionId = localStorage.getItem('currentSessionId');
+    // 💡 التعديل الثالث: استخدام الـ session_id الجديد المرجّع من ريكويست الفيريفاي
+    const finalSessionId = this.serverSessionId || localStorage.getItem('currentSessionId') || this.examId;
     const token = localStorage.getItem('token');
 
-    if (this.examId && !sessionId) {
-      localStorage.setItem('currentSessionId', this.examId);
+    if (!finalSessionId) {
+      this.errorMessage = "Error: No active session ID found to start the exam.";
+      this.cdr.detectChanges();
+      return;
     }
 
-    this.successMessage = "Constructing isolated sandbox workspace... Preparing IDE core.";
+    this.successMessage = "Preparing exam environment... Please wait.";
     this.cdr.detectChanges();
 
     const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
     const url = `https://ofoqai.runasp.net/api/v1/exam/start`;
-    const body = { session_id: sessionId || this.examId };
+
+    // إرسال الـ ID الجديد للباك إند
+    const body = { session_id: finalSessionId };
 
     this.http.post(url, body, { headers }).subscribe({
       next: (res) => {
         console.log('✅ Exam session successfully recorded in Database!', res);
-        this.router.navigate(['/exam', this.examId || sessionId]);
+        // التوجيه لصفحة الامتحان بالـ ID الصحيح الجديد
+        this.router.navigate(['/exam', finalSessionId]);
       },
       error: (err) => {
-        console.warn(' Server refused start token (400), triggering secure fallback route...', err);
-
-        if (!localStorage.getItem('examRemainingSeconds')) {
-          localStorage.setItem('examRemainingSeconds', '3600');
-          localStorage.setItem('examTitle', 'OFOQ Secure Assessment System');
-        }
-        this.router.navigate(['/exam', this.examId || sessionId]);
+        console.warn('Server error on start endpoint, triggering fallback...', err);
+        // حتى لو حدث خطأ، نوجه بالـ ID الجديد لتفادي الـ "Exam not found"
+        this.router.navigate(['/exam', finalSessionId]);
       }
     });
   }
