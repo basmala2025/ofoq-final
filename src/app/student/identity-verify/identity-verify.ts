@@ -1,9 +1,12 @@
 import { Component, OnInit, AfterViewInit, OnDestroy, ElementRef, ViewChild, ChangeDetectorRef } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-identity-verify',
+  standalone: true,          // 2. ADD THIS
+  imports: [CommonModule],   // 3. ADD THIS
   styles:[`
     :host {
       --ofoq-purple: #7b2cbf;
@@ -84,6 +87,11 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
       animation: pulse-ring 1.5s infinite;
     }
 
+    .camera-gradient-ring.success-ring {
+      background: linear-gradient(135deg, #2ecc71, #27ae60);
+      box-shadow: 0 0 15px rgba(46, 204, 113, 0.5);
+    }
+
     @keyframes pulse-ring {
       0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(123, 44, 191, 0.4); }
       70% { transform: scale(1.02); box-shadow: 0 0 0 15px rgba(123, 44, 191, 0); }
@@ -103,7 +111,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
       width: 100%;
       height: 100%;
       object-fit: cover;
-      transform: scaleX(-1); /* Mirror view for comfort */
+      transform: scaleX(-1);
     }
 
     .hidden {
@@ -121,11 +129,19 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
       align-items: center;
       background: #f8f9fa;
       color: var(--text-muted);
+      flex-direction: column;
     }
 
     .error-text {
       color: var(--error);
       font-weight: bold;
+    }
+
+    .success-text {
+      color: var(--success);
+      font-weight: bold;
+      font-size: 1.2rem;
+      margin-top: 10px;
     }
 
     .spinner {
@@ -185,6 +201,10 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
       animation: blink 1s infinite;
     }
 
+    .status-dot.success {
+      background-color: var(--success);
+    }
+
     @keyframes blink {
       0%, 100% { opacity: 1; }
       50% { opacity: 0.5; }
@@ -224,30 +244,47 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
     }
 
     /* Action Button */
-    .btn-verify {
+    .btn-action {
       width: 100%;
-      padding: 16px;
-      border: none;
+      padding: 14px 24px;
       border-radius: 12px;
-      background: linear-gradient(to right, var(--ofoq-orange), var(--ofoq-purple));
-      color: white;
-      font-size: 1.1rem;
-      font-weight: 700;
+      font-weight: 600;
+      font-size: 16px;
+      border: none;
       cursor: pointer;
-      box-shadow: 0 4px 15px rgba(123, 44, 191, 0.3);
-      transition: transform 0.2s, opacity 0.2s;
+      display: block;
+      transition: all 0.3s ease;
+      margin-top: 24px;
     }
 
-    .btn-verify:active:not(:disabled) {
+    .btn-verify {
+      background: #6366f1;
+      color: white;
+      box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+    }
+
+    .btn-start-exam {
+      background: linear-gradient(to right, #2ecc71, #27ae60);
+      color: white;
+      box-shadow: 0 4px 15px rgba(46, 204, 113, 0.4);
+    }
+
+    .btn-action:active:not(:disabled) {
       transform: scale(0.98);
     }
 
-    .btn-verify:disabled {
-      opacity: 0.7;
-      cursor: not-allowed;
+    .btn-action:disabled {
+      background: #cbd5e1 !important;
+      color: #64748b !important;
+      cursor: not-allowed !important;
+      box-shadow: none !important;
     }
 
-    `],
+    .btn-action:not(:disabled):hover {
+      opacity: 0.9;
+      transform: translateY(-2px);
+    }
+  `],
   template: `
     <div class="verify-wrapper">
       <div class="app-header">
@@ -259,23 +296,32 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
       </div>
 
       <div class="verify-content">
-        <p class="instruction">
+        <p class="instruction" *ngIf="!isVerificationSuccessful">
           Look at the camera to verify your identity. <br>
           Ensure your face is centered, and not too close or too far.
         </p>
 
+        <p class="instruction" *ngIf="isVerificationSuccessful" style="color: var(--success); font-weight: bold;">
+          Identity successfully verified! You may now proceed.
+        </p>
+
         <div class="camera-section">
-          <div class="camera-gradient-ring" [class.analyzing-ring]="isVerifying">
+          <div class="camera-gradient-ring" [class.analyzing-ring]="isVerifying" [class.success-ring]="isVerificationSuccessful">
             <div class="camera-box">
-              <video #videoElement autoplay playsinline [class.hidden]="!isCameraReady"></video>
+              <video #videoElement autoplay playsinline [class.hidden]="!isCameraReady || isVerificationSuccessful"></video>
               <canvas #canvasElement style="display: none;"></canvas>
 
-              <div class="camera-placeholder" *ngIf="!isCameraReady && !cameraError">
+              <div class="camera-placeholder" *ngIf="!isCameraReady && !cameraError && !isVerificationSuccessful">
                 <div class="spinner"></div>
               </div>
 
-              <div class="camera-placeholder error-text" *ngIf="cameraError">
+              <div class="camera-placeholder error-text" *ngIf="cameraError && !isVerificationSuccessful">
                 <p>Camera Error</p>
+              </div>
+
+              <div class="camera-placeholder" *ngIf="isVerificationSuccessful">
+                <svg viewBox="0 0 24 24" width="48" height="48" stroke="var(--success)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                <p class="success-text">Verified</p>
               </div>
 
               <div class="scanner-overlay" *ngIf="isVerifying"></div>
@@ -284,10 +330,17 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
         </div>
 
         <div class="status-card">
-          <div class="status-dot" [class.ready]="isCameraReady && !isVerifying" [class.analyzing]="isVerifying"></div>
+          <div class="status-dot"
+               [class.ready]="isCameraReady && !isVerifying && !isVerificationSuccessful"
+               [class.analyzing]="isVerifying"
+               [class.success]="isVerificationSuccessful"></div>
           <div class="status-text">
-            <h3>{{ isVerifying ? 'Analyzing...' : (isCameraReady ? 'Ready' : 'Waiting for Camera') }}</h3>
-            <p>{{ isVerifying ? 'Please keep your face in the frame' : 'Press Start Verification to begin' }}</p>
+            <h3>
+              {{ isVerificationSuccessful ? 'Access Granted' : (isVerifying ? 'Analyzing...' : (isCameraReady ? 'Ready' : 'Waiting for Camera')) }}
+            </h3>
+            <p>
+              {{ isVerificationSuccessful ? 'Secure session established' : (isVerifying ? 'Please keep your face in the frame' : 'Press Start Verification to begin') }}
+            </p>
           </div>
         </div>
 
@@ -299,15 +352,14 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
         </div>
 
         <button *ngIf="!isVerificationSuccessful"
-                class="btn-verify"
+                class="btn-action btn-verify"
                 (click)="startVerification()"
                 [disabled]="isVerifying || !isCameraReady">
           {{ isVerifying ? 'Processing...' : 'Start Verification' }}
         </button>
 
         <button *ngIf="isVerificationSuccessful"
-                class="btn-verify"
-                style="background: linear-gradient(to right, #2ecc71, #27ae60); box-shadow: 0 4px 15px rgba(46, 204, 113, 0.4);"
+                class="btn-action btn-start-exam"
                 (click)="startActualExam()">
           Start Exam Now
         </button>
@@ -327,9 +379,7 @@ export class IdentityVerifyComponent implements OnInit, AfterViewInit, OnDestroy
   errorMessage: string | null = null;
   successMessage: string | null = null;
 
-  // سنخزن الـ session_id الجديد الراجع من سرفر الفيريفاي هنا
   serverSessionId: string | null = null;
-
   private mediaStream: MediaStream | null = null;
 
   constructor(
@@ -340,7 +390,6 @@ export class IdentityVerifyComponent implements OnInit, AfterViewInit, OnDestroy
   ) {}
 
   ngOnInit() {
-    // جلب الـ ID من الرابط (سواء كان اسمه examId أو id)
     this.examId = this.route.snapshot.paramMap.get('examId') || this.route.snapshot.paramMap.get('id');
     console.log('Exam ID fetched from route:', this.examId);
   }
@@ -476,7 +525,6 @@ export class IdentityVerifyComponent implements OnInit, AfterViewInit, OnDestroy
       formData.append('frames', blob, `frame_${index + 1}.jpg`);
     });
 
-    // 💡 التعديل الأول: إرسال المتغير بالاسم الصحيح الذي يتوقعه الـ API
     const activeId = this.examId || localStorage.getItem('currentSessionId') || '';
     formData.append('activeExamSessionId', activeId);
 
@@ -490,7 +538,6 @@ export class IdentityVerifyComponent implements OnInit, AfterViewInit, OnDestroy
           this.errorMessage = null;
           this.successMessage = "⚡ Identity Verified successfully! Access granted.";
 
-          // 💡 التعديل الثاني: حفظ الـ session_id الجديد المرجّع من الباك إند
           this.serverSessionId = res.session_id;
 
           if (res.session_id) {
@@ -503,13 +550,12 @@ export class IdentityVerifyComponent implements OnInit, AfterViewInit, OnDestroy
              localStorage.setItem('examTitle', res.exam_title);
           }
 
+          // تم إغلاق الكاميرا وإظهار زر بدء الامتحان بنجاح
           this.turnOffCamera();
           this.isVerificationSuccessful = true;
+          this.cdr.detectChanges();
 
-          // الانتقال التلقائي بعد 400ms أو ينتظر ضغطة الزر
-          setTimeout(() => {
-            this.startActualExam();
-          }, 400);
+          // تم إزالة الانتقال التلقائي (setTimeout) لإعطاء المستخدم فرصة الضغط على "Start Exam Now"
 
         } else {
           this.successMessage = null;
@@ -528,7 +574,6 @@ export class IdentityVerifyComponent implements OnInit, AfterViewInit, OnDestroy
   }
 
   startActualExam() {
-    // 💡 التعديل الثالث: استخدام الـ session_id الجديد المرجّع من ريكويست الفيريفاي
     const finalSessionId = this.serverSessionId || localStorage.getItem('currentSessionId') || this.examId;
     const token = localStorage.getItem('token');
 
@@ -544,18 +589,15 @@ export class IdentityVerifyComponent implements OnInit, AfterViewInit, OnDestroy
     const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
     const url = `https://ofoqai.runasp.net/api/v1/exam/start`;
 
-    // إرسال الـ ID الجديد للباك إند
     const body = { session_id: finalSessionId };
 
     this.http.post(url, body, { headers }).subscribe({
       next: (res) => {
         console.log('✅ Exam session successfully recorded in Database!', res);
-        // التوجيه لصفحة الامتحان بالـ ID الصحيح الجديد
         this.router.navigate(['/exam', finalSessionId]);
       },
       error: (err) => {
         console.warn('Server error on start endpoint, triggering fallback...', err);
-        // حتى لو حدث خطأ، نوجه بالـ ID الجديد لتفادي الـ "Exam not found"
         this.router.navigate(['/exam', finalSessionId]);
       }
     });
