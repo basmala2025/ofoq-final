@@ -345,19 +345,45 @@ export class IdentityVerifyComponent implements OnInit, AfterViewInit, OnDestroy
   ngAfterViewInit() {
     setTimeout(() => this.initCamera(), 500);
   }
-
-  async initCamera() {
+async initCamera() {
     this.errorMessage = null;
     this.successMessage = null;
     try {
-      this.mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          width: 640,
-          height: 480,
-          facingMode: 'user'
-        },
+      const initialStream = await navigator.mediaDevices.getUserMedia({ video: true });
+
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const videoDevices = devices.filter(device => device.kind === 'videoinput');
+
+      console.log("جميع الكاميرات المكتشفة في الجهاز:", videoDevices.map(d => d.label));
+
+      let laptopCamera = videoDevices.find(device =>
+        (device.label.toLowerCase().includes('integrated') ||
+         device.label.toLowerCase().includes('webcam') ||
+         device.label.toLowerCase().includes('hd') ||
+         device.label.toLowerCase().includes('front')) &&
+        !device.label.toLowerCase().includes('droidcam') &&
+        !device.label.toLowerCase().includes('virtual')
+      );
+
+      if (!laptopCamera && videoDevices.length > 0) {
+        laptopCamera = videoDevices.find(device =>
+          !device.label.toLowerCase().includes('droidcam') &&
+          !device.label.toLowerCase().includes('virtual')
+        );
+      }
+
+      initialStream.getTracks().forEach(track => track.stop());
+
+      const constraints: MediaStreamConstraints = {
+        video: laptopCamera
+          ? { deviceId: { exact: laptopCamera.deviceId } }
+          : { facingMode: 'user' },
         audio: false
-      });
+      };
+
+      console.log(" [OFOQ Camera Core] الكاميرا التي تم الاستقرار عليها وتشغيلها:", laptopCamera?.label || "Default");
+
+      this.mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
 
       if (this.videoElement && this.videoElement.nativeElement) {
         this.videoElement.nativeElement.srcObject = this.mediaStream;
@@ -419,10 +445,9 @@ export class IdentityVerifyComponent implements OnInit, AfterViewInit, OnDestroy
     const captureInterval = setInterval(() => {
       if (frameCount >= 5) {
         clearInterval(captureInterval);
-        this.successMessage = "📡 Syncing biometric data with OFOQ AI Server...";
+        this.successMessage = " Syncing biometric data with OFOQ AI Server...";
         this.cdr.detectChanges();
 
-        // 🔗 الربط بالـ API الحقيقي لإرسال الداتا الفعلية بعد انتهاء اللقطات
         this.sendFivePhotosToApi(capturedBlobs, token);
         return;
       }
@@ -439,7 +464,6 @@ export class IdentityVerifyComponent implements OnInit, AfterViewInit, OnDestroy
           frameCount++;
           this.successMessage = `Capturing secure biological frames (${frameCount}/5)...`;
 
-          // 📥 ─── [كود تحميل ومعاينة الفريمات تلقائياً] ───
           const blobUrl = URL.createObjectURL(blob);
           const downloadLink = document.createElement('a');
           downloadLink.href = blobUrl;
@@ -464,7 +488,6 @@ export class IdentityVerifyComponent implements OnInit, AfterViewInit, OnDestroy
       formData.append('frames', blob, `frame_${index + 1}.jpg`);
     });
 
-    // استخدام الـ Session ID الحقيقي الثابت والمخزن حالياً بالرابط أو الممرر
     formData.append('session_id', this.examId || localStorage.getItem('currentSessionId') || '');
 
     const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
@@ -491,7 +514,6 @@ export class IdentityVerifyComponent implements OnInit, AfterViewInit, OnDestroy
           this.turnOffCamera();
           this.isVerificationSuccessful = true;
 
-          // 🚀 الانتقال المباشر وبدء الامتحان فور نجاح استجابة السيرفر الحقيقية
           setTimeout(() => {
             this.startActualExam();
           }, 400);
@@ -533,7 +555,7 @@ export class IdentityVerifyComponent implements OnInit, AfterViewInit, OnDestroy
         this.router.navigate(['/exam', this.examId || sessionId]);
       },
       error: (err) => {
-        console.warn('⚠️ Server refused start token (400), triggering secure fallback route...', err);
+        console.warn(' Server refused start token (400), triggering secure fallback route...', err);
 
         if (!localStorage.getItem('examRemainingSeconds')) {
           localStorage.setItem('examRemainingSeconds', '3600');
