@@ -4,6 +4,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 
 @Component({
   selector: 'app-identity-verify',
+  styleUrl:'identity-verify.css',
   template: `
     <div class="verify-wrapper">
       <div class="app-header">
