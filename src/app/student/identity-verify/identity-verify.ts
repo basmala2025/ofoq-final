@@ -423,18 +423,11 @@ export class IdentityVerifyComponent implements OnInit, AfterViewInit, OnDestroy
       }
 
       initialStream.getTracks().forEach(track => track.stop());
-const constraints: MediaStreamConstraints = {
+
+      const constraints: MediaStreamConstraints = {
         video: laptopCamera
-          ? {
-              deviceId: { exact: laptopCamera.deviceId },
-              width: { ideal: 1280 },
-              height: { ideal: 720 }
-            }
-          : {
-              facingMode: 'user',
-              width: { ideal: 1280 },
-              height: { ideal: 720 }
-            },
+          ? { deviceId: { exact: laptopCamera.deviceId } }
+          : { facingMode: 'user' },
         audio: false
       };
 
@@ -489,12 +482,13 @@ const constraints: MediaStreamConstraints = {
     const capturedBlobs: Blob[] = [];
     let frameCount = 0;
 
-const vidW = video.videoWidth;   // المفروض دي هتبقى 1280
-    const vidH = video.videoHeight;  // والمفروض دي هتبقى 720
-
-    // 👇 هنخلي الكانفاس ياخد أبعاد الفيديو الأصلية بالظبط بدون أي قص
-    canvas.width = vidW;
-    canvas.height = vidH;
+    const vidW = video.videoWidth;
+    const vidH = video.videoHeight;
+    const portraitHeight = vidH;
+    const portraitWidth = vidH * (3 / 4);
+    canvas.width = portraitWidth;
+    canvas.height = portraitHeight;
+    const startX = (vidW - portraitWidth) / 2;
 
     const captureInterval = setInterval(() => {
       if (frameCount >= 5) {
@@ -506,10 +500,12 @@ const vidW = video.videoWidth;   // المفروض دي هتبقى 1280
         return;
       }
 
-      // 👇 رسم الفريم بالكامل
-      context.drawImage(video, 0, 0, vidW, vidH);
+      context.drawImage(
+        video,
+        startX, 0, portraitWidth, portraitHeight,
+        0, 0, portraitWidth, portraitHeight
+      );
 
-      // 👇 زي ما هو طلب بالظبط (Quality 95%)
       canvas.toBlob((blob) => {
         if (blob) {
           capturedBlobs.push(blob);
@@ -519,7 +515,8 @@ const vidW = video.videoWidth;   // المفروض دي هتبقى 1280
         }
       }, 'image/jpeg', 0.95);
 
-    }, 400);  }
+    }, 400);
+  }
 
  private sendFivePhotosToApi(blobs: Blob[], token: string) {
   const formData = new FormData();
