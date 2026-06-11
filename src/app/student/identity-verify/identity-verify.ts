@@ -517,14 +517,27 @@ export class IdentityVerifyComponent implements OnInit, AfterViewInit, OnDestroy
 
     }, 400);
   }
-
+// دالة مؤقتة عشان تنزلي الصور وتشوفيها (امسحيها قبل ما ترفعي الكود النهائي)
+  private downloadFramesForDebugging(blobs: Blob[]) {
+    blobs.forEach((blob, index) => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ofoq_test_frame_${index + 1}.jpg`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url); // تنظيف الميموري
+    });
+  }
  private sendFivePhotosToApi(blobs: Blob[], token: string) {
-  const formData = new FormData();
+  this.downloadFramesForDebugging(blobs);
 
-  blobs.forEach((blob, index) => {
-    formData.append('frames', blob, `frame_${index + 1}.jpg`);
-  });
+    const formData = new FormData();
 
+    blobs.forEach((blob, index) => {
+      formData.append('frames', blob, `frame_${index + 1}.jpg`);
+    });
   // 🔥 التعديل هنا: خلينا الاسم session_id زي ما الباك إند مستني
   const activeId = this.examId || localStorage.getItem('currentSessionId') || '';
   formData.append('session_id', activeId);
