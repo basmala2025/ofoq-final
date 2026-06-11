@@ -1,6 +1,7 @@
 <div id="results-page" class="results-page-wrapper">
   <div class="results-container">
     <div class="results-box">
+
       <div class="results-header">
         <h1>Exam Completed!</h1>
         <p>{{ examTitle }} - {{ category }}</p>
@@ -27,26 +28,29 @@
           <div class="stat-mini-value">{{ timeTaken }}</div>
           <div class="stat-mini-label">Time Remaining</div>
         </div>
+
         <div class="stat-mini">
           <div class="stat-mini-value">{{ passedCount }}/{{ testCases?.length || 0 }}</div>
           <div class="stat-mini-label">Tests Passed</div>
         </div>
+
         <div class="stat-mini">
           <div class="stat-mini-value">{{ totalLines }}</div>
           <div class="stat-mini-label">Lines of Code</div>
         </div>
       </div>
 
-      <div class="violations-summary" *ngIf="violations > 0" style="margin-top: 1rem; color: #e74c3c; font-weight: bold;">
-        AI Alert: {{ violations }} Security Violations detected.
+      <div class="violations-summary" *ngIf="violations > 0" style="margin-top: 1.5rem; color: #e74c3c; font-weight: bold; background: rgba(231, 76, 60, 0.1); padding: 12px; border-radius: 8px; border: 1px solid rgba(231, 76, 60, 0.2); text-align: center;">
+        <i class="fas fa-exclamation-triangle" style="margin-right: 6px;"></i>
+        AI Alert: {{ violations }} Security Violations detected during this session.
       </div>
 
-      <div class="button-group">
+      <div class="button-group" style="margin-top: 2rem;">
         <button class="btn btn-primary" (click)="goHome()">
           <i class="fas fa-home"></i> Back to Dashboard
         </button>
       </div>
+
     </div>
   </div>
 </div>
- 

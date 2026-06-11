@@ -7,7 +7,7 @@ import { Router } from '@angular/router';
   standalone: true,
   imports: [CommonModule],
   templateUrl: './results.html',
-  styleUrl: './results.css',
+  styleUrls: ['./results.css'],
 })
 export class Results implements OnInit {
   examTitle: string = '';
@@ -24,8 +24,13 @@ export class Results implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    // التمرير لأعلى الصفحة عند الدخول
     window.scrollTo(0, 0);
+
+    // تفعيل حماية زر الرجوع لمنع الطالب من العودة للامتحان
     this.preventBackButton();
+
+    // تحميل النتائج الحقيقية المستلمة من الباك إند
     this.loadRealResults();
   }
 
@@ -35,12 +40,13 @@ export class Results implements OnInit {
       const parsed = JSON.parse(data);
       this.examTitle = parsed.examTitle;
       this.category = parsed.category;
-      this.score = parsed.score;
-      this.timeTaken = parsed.timeTaken;
-      this.totalLines = parsed.totalLines;
-      this.testCases = parsed.testCases;
-      this.violations = parsed.violations;
+      this.score = parsed.score; // النسبة المئوية المحسوبة
+      this.timeTaken = parsed.timeTaken; // الوقت المتبقي عند التسليم
+      this.totalLines = parsed.totalLines; // عدد سطور الكود
+      this.testCases = parsed.testCases; // البنود المفصلة (Coding Output, Performance, Verdict)
+      this.violations = parsed.violations; // عدد المخالفات الأمنية
     } else {
+      // إذا حاول الطالب دخول الصفحة بدون امتحان، يتم توجيهه للداشبورد مباشرة
       this.router.navigate(['/dashboardstudent']);
     }
   }
@@ -57,6 +63,7 @@ export class Results implements OnInit {
   }
 
   goHome() {
+    // تنظيف الكاش والعودة للداشبورد بشكل آمن لمنع تكرار فتح الصفحة
     localStorage.removeItem('ofoq_last_result');
     this.router.navigate(['/dashboardstudent'], { replaceUrl: true });
   }

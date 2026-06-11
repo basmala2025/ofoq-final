@@ -91,11 +91,20 @@ loadExamProblemDetails() {
         const langLower = res.constraints?.allowedLanguage?.toLowerCase() || '';
         this.allowedLanguage = langLower.includes('c++') || langLower.includes('cpp') ? 'cpp' : 'python';
 
-        // 👇 التعديل هنا: أخدنا الـ durationMinutes وضربناها في 60 عشان نحولها لثواني
-        const durationInMinutes = res.durationMinutes || res.exam?.durationMinutes || res.constraints?.timeLimitSec / 60 || 60;
-        const totalSeconds = durationInMinutes * 60;
+        // 👇 التعديل هنا: بنشوف هل فيه وقت متخزن من قبل الريفرش؟
+        const savedSeconds = localStorage.getItem('examRemainingSeconds');
 
-        // نشغل التايمر بالثواني
+        let totalSeconds: number;
+        if (savedSeconds) {
+          // لو لقاه (يعني الطالب عمل ريفريش)، بياخد الوقت اللي وقف عنده بالظبط
+          totalSeconds = parseInt(savedSeconds, 10);
+        } else {
+          // لو مالقاهوش (يعني أول مرة يدخل الامتحان)، بياخد الوقت الأصلي من السيرفر
+          const durationInMinutes = res.durationMinutes || 60;
+          totalSeconds = durationInMinutes * 60;
+        }
+
+        // تشغيل التايمر بالوقت الذكي
         this.startTimerCountdown(totalSeconds);
 
         this.initMonacoEditor();
@@ -119,9 +128,15 @@ loadExamProblemDetails() {
       if (seconds > 0) {
         seconds--;
         updateDisplay(seconds);
+
+        // 👇 السطر ده السحر اللي هيحمينا من الريفرش: بيحدث الثواني في الـ LocalStorage أول بأول
+        localStorage.setItem('examRemainingSeconds', seconds.toString());
       } else {
         clearInterval(this.timerInterval);
         this.timerDisplay = "00:00";
+
+        // الامتحان خلص، نمسح التايمر من الـ LocalStorage
+        localStorage.removeItem('examRemainingSeconds');
         this.forceSubmitAndExit();
       }
     }, 1000);
@@ -229,20 +244,18 @@ loadExamProblemDetails() {
 
   submitSolution() {
     if (!this.editor) return;
-    if (!confirm('Are you sure you want to finalize your submission? This locks your grade calculation.')) return;
+    if (!confirm('Are you sure you want to finalize your submission?')) return;
 
     const sourceCode = this.editor.getValue();
 
-    // examSessionId
     this.examService.submitExam(this.examSessionId, sourceCode).subscribe({
       next: (res) => {
-        this.cleanupEnvironment();
+        this.cleanupEnvironment(); 
         this.router.navigate(['/exam/result', this.examSessionId]);
       },
       error: (err) => console.error('Finalization request crashed:', err)
     });
   }
-
   forceSubmitAndExit() {
     const backupCode = this.editor ? this.editor.getValue() : (localStorage.getItem(this.savedCodeKey) || '');
     this.examService.submitExam(this.examSessionId, backupCode).subscribe({
@@ -263,16 +276,22 @@ loadExamProblemDetails() {
   }
 
   cleanupEnvironment() {
+    // التنظيف النهائي للداتا بعد تسليم الامتحان بنجاح
     localStorage.removeItem(this.savedCodeKey);
-    if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
+    localStorage.removeItem('examRemainingSeconds');
 
-    // إيقاف كل مجسات المراقبة (الكاميرا والمايك والسوكيت) عند الخروج
+    if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
     this.proctoringService.stopEverything();
-    console.log('🛑 AI Proctoring Stopped & Environment Cleaned');
+    console.log('🧹 Exam finalized. Backup data cleared safely.');
   }
 
   ngOnDestroy() {
+    // 1. إيقاف العداد
     if (this.timerInterval) clearInterval(this.timerInterval);
-    this.cleanupEnvironment();
-  }
-}
+
+    // 2. إيقاف الكاميرا والمايك والسوكيت فوراً عشان الكاميرا متفضلش منورة
+    this.proctoringService.stopEverything();
+    console.log('🛑 Component destroyed, proctoring paused.');
+
+    // 🔴 تم حذف this.cleanupEnvironment() من هنا عشان متمسحش الكود وقت الريفرش
+  }}

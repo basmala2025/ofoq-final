@@ -11,7 +11,7 @@ import { Signup } from './auth/signup/signup';
 import { Login } from './auth/login/login';
 import { AdminManagement } from './admin/admin-management/admin-management';
 import { IdentityVerifyComponent } from './student/identity-verify/identity-verify';
-
+import { Results } from './student/results/results';
 export const routes: Routes = [
   { path: '', redirectTo: '/home', pathMatch: 'full' },
   { path: 'home', component: Home, canActivate: [guestGuard] },
@@ -68,6 +68,11 @@ export const routes: Routes = [
     canActivate: [authGuard, roleGuard],
     data: { role: 'ta' },
     loadChildren: () => import('./ta/ta-dashboard.routes').then(m => m.TA_DASHBOARD_ROUTES)
+  },
+  {
+    path: 'results',
+    component: Results,
+    title: 'OFOQ - Exam Results' // (اختياري) عشان يغير عنوان التاب في المتصفح
   },
   {
     path: '**',
