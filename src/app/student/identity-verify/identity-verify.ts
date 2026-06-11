@@ -482,12 +482,13 @@ export class IdentityVerifyComponent implements OnInit, AfterViewInit, OnDestroy
     const capturedBlobs: Blob[] = [];
     let frameCount = 0;
 
-   const vidW = video.videoWidth;   // (Landscape) المفروض دي هتبقى 1280
-    const vidH = video.videoHeight;  // (Landscape) والمفروض دي هتبقى 720
-
-    // 👇 عكسنا الأبعاد عشان الكانفاس يبقى بالطول (Portrait 720x1280)
-    canvas.width = vidH;   // العرض بقى 720
-    canvas.height = vidW;  // الطول بقى 1280
+    const vidW = video.videoWidth;
+    const vidH = video.videoHeight;
+    const portraitHeight = vidH;
+    const portraitWidth = vidH * (3 / 4);
+    canvas.width = portraitWidth;
+    canvas.height = portraitHeight;
+    const startX = (vidW - portraitWidth) / 2;
 
     const captureInterval = setInterval(() => {
       if (frameCount >= 5) {
@@ -499,22 +500,12 @@ export class IdentityVerifyComponent implements OnInit, AfterViewInit, OnDestroy
         return;
       }
 
-      // 👇 بداية سحر الـ Canvas لعمل الدوران (Rotation) 90 درجة
-      context.save();
+      context.drawImage(
+        video,
+        startX, 0, portraitWidth, portraitHeight,
+        0, 0, portraitWidth, portraitHeight
+      );
 
-      // 1. نقل نقطة المركز لنص الكانفاس بالظبط
-      context.translate(canvas.width / 2, canvas.height / 2);
-
-      // 2. لفة 90 درجة (بالراديان)
-      context.rotate(90 * Math.PI / 180);
-
-      // 3. رسم الصورة (بنرسمها بالسالب عشان السنتر بتاعها ييجي في سنتر الكانفاس)
-      context.drawImage(video, -vidW / 2, -vidH / 2, vidW, vidH);
-
-      // 4. إرجاع إعدادات الكانفاس لأصلها عشان الفريم اللي بعده
-      context.restore();
-
-      // 👇 استخراج الصورة بجودة 95% زي ما طلبنا
       canvas.toBlob((blob) => {
         if (blob) {
           capturedBlobs.push(blob);
