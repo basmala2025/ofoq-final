@@ -4,8 +4,9 @@ import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { ActivatedRoute, Router } from '@angular/router';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { ExamService } from '../exam';
+import { ProctoringService } from '../../services/proctoring.service'; // 👈 تأكدي من مسار الخدمة
 import loader from '@monaco-editor/loader';
 
 @Component({
@@ -18,7 +19,9 @@ import loader from '@monaco-editor/loader';
 export class ExamEditorComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('editorContainer', { static: true }) editorContainer!: ElementRef;
 
-  // 👇 تم التعديل هنا: استخدام sessionId بدل examId
+  // 👈 ربط الفيديو المخفي من الـ HTML بالكومبوننت
+  @ViewChild('proctoringVideo') proctoringVideo!: ElementRef<HTMLVideoElement>;
+
   sessionId!: string;
   editor: any;
   savedCodeKey = 'ofoq_exam_backup';
@@ -45,14 +48,14 @@ export class ExamEditorComponent implements OnInit, AfterViewInit, OnDestroy {
     private router: Router,
     private examService: ExamService,
     private http: HttpClient,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private proctoringService: ProctoringService // 👈 حقن خدمة المراقبة هنا
   ) {}
 
   ngOnInit() {
-    // 👇 جلب الـ sessionId من الـ URL أو كاحتياطي من الـ LocalStorage
+    // جلب الـ sessionId من الـ URL أو الـ LocalStorage
     this.sessionId = this.route.snapshot.paramMap.get('id') || this.route.snapshot.paramMap.get('examId') || localStorage.getItem('currentSessionId')!;
 
-    // حفظه كاحتياطي عشان لو الطالب عمل Refresh الصفحة متضربش
     if(this.sessionId) {
       localStorage.setItem('currentSessionId', this.sessionId);
     }
@@ -62,15 +65,21 @@ export class ExamEditorComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngAfterViewInit() {
     this.enterFullScreen();
+
+    // 👈 تشغيل المراقبة الشاملة (كاميرا، صوت، فيجين، SignalR) بعد تحميل الواجهة
+    setTimeout(() => {
+      if (this.proctoringVideo && this.proctoringVideo.nativeElement) {
+        this.proctoringService.startProctoring(this.proctoringVideo.nativeElement, this.sessionId);
+        console.log('👀 AI Proctoring (Vision & Audio) Started!');
+      }
+    }, 500);
   }
 
   loadExamProblemDetails() {
-    // 👇 استخدام this.sessionId لطلب التفاصيل (لثف يثفشهمس 😉)
     this.examService.getExamDetails(this.sessionId).subscribe({
       next: (res) => {
         this.problemTitle = res.title || 'Untitled Assessment';
         this.problemDescription = res.description || 'No descriptive tasks provided.';
-
         this.publicTestCases = res.publicTestCases || [];
 
         const langLower = res.constraints?.allowedLanguage?.toLowerCase() || '';
@@ -108,6 +117,10 @@ export class ExamEditorComponent implements OnInit, AfterViewInit, OnDestroy {
     }, 1000);
   }
 
+  // =========================================================================
+  // 🔐 ANTI-CHEAT INTEGRITY HOOKS
+  // =========================================================================
+
   @HostListener('document:contextmenu', ['$event'])
   preventRightClick(e: MouseEvent) {
     e.preventDefault();
@@ -132,12 +145,10 @@ export class ExamEditorComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   triggerViolation(type: string) {
-    // 👇 إرسال الـ sessionId لتسجيل محاولة الغش
     this.examService.logTabSwitch(this.sessionId).subscribe({
       next: (res: any) => {
         this.violationCount = res.currentViolationCount;
 
-        // ميكانيزم التحذير قبل تطبيق العقوبة (زي ما طلبتي في إعدادات النظام)
         if (res.shouldTerminate) {
           this.isRedAlarm = true;
           this.securityMessage = res.serverMessage || 'Integrity threshold breached. Session revoked.';
@@ -155,6 +166,10 @@ export class ExamEditorComponent implements OnInit, AfterViewInit, OnDestroy {
       }
     });
   }
+
+  // =========================================================================
+  // 💻 SANDBOX & MONACO EDITOR
+  // =========================================================================
 
   initMonacoEditor() {
     loader.init().then((monaco: any) => {
@@ -184,7 +199,6 @@ export class ExamEditorComponent implements OnInit, AfterViewInit, OnDestroy {
 
     const sourceCode = this.editor.getValue();
 
-    // 👇 تنفيذ الكود بناءً على الـ sessionId
     this.examService.runSandbox(this.sessionId, sourceCode, this.allowedLanguage).subscribe({
       next: (res) => {
         this.compileMessage = res.compileOutput;
@@ -206,7 +220,6 @@ export class ExamEditorComponent implements OnInit, AfterViewInit, OnDestroy {
 
     const sourceCode = this.editor.getValue();
 
-    // 👇 الإرسال النهائي بالـ sessionId
     this.examService.submitExam(this.sessionId, sourceCode).subscribe({
       next: (res) => {
         this.cleanupEnvironment();
@@ -238,6 +251,10 @@ export class ExamEditorComponent implements OnInit, AfterViewInit, OnDestroy {
   cleanupEnvironment() {
     localStorage.removeItem(this.savedCodeKey);
     if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
+
+    // 👈 إيقاف كل مجسات المراقبة (الكاميرا والمايك والسوكيت) عند الخروج
+    this.proctoringService.stopEverything();
+    console.log('🛑 AI Proctoring Stopped & Environment Cleaned');
   }
 
   ngOnDestroy() {

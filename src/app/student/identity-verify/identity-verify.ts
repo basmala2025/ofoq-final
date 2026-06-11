@@ -424,14 +424,38 @@ export class IdentityVerifyComponent implements OnInit, AfterViewInit, OnDestroy
 
       initialStream.getTracks().forEach(track => track.stop());
 
-      const constraints: MediaStreamConstraints = {
+    // 👇 ضفنا الأبعاد عشان نجبر الكاميرا تفتح HD
+     // 👇 الإعدادات الصارمة (إجبار المتصفح على جودة HD كحد أدنى)
+      let constraints: MediaStreamConstraints = {
         video: laptopCamera
-          ? { deviceId: { exact: laptopCamera.deviceId } }
-          : { facingMode: 'user' },
+          ? {
+              deviceId: { exact: laptopCamera.deviceId },
+              width: { min: 1280, ideal: 1920 },
+              height: { min: 720, ideal: 1080 }
+            }
+          : {
+              facingMode: 'user',
+              width: { min: 1280, ideal: 1920 },
+              height: { min: 720, ideal: 1080 }
+            },
         audio: false
       };
 
-      this.mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+      try {
+        // المحاولة الأولى: فتح الكاميرا بالـ HD إجبارياً
+        this.mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+        console.log("✅ Camera forced to HD successfully!");
+      } catch (hdError) {
+        console.warn("⚠️ HD not supported by this local hardware, falling back to default resolution...", hdError);
+        // المحاولة التانية (Fallback): لو الهاردوير مفيش فيه 720p، نفتح بالديفولت عشان الكود ميضربش
+        constraints = {
+          video: laptopCamera
+            ? { deviceId: { exact: laptopCamera.deviceId } }
+            : { facingMode: 'user' },
+          audio: false
+        };
+        this.mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+      }
 
       if (this.videoElement && this.videoElement.nativeElement) {
         this.videoElement.nativeElement.srcObject = this.mediaStream;
@@ -531,64 +555,60 @@ export class IdentityVerifyComponent implements OnInit, AfterViewInit, OnDestroy
     });
   }
  private sendFivePhotosToApi(blobs: Blob[], token: string) {
-  this.downloadFramesForDebugging(blobs);
-
     const formData = new FormData();
-
     blobs.forEach((blob, index) => {
       formData.append('frames', blob, `frame_${index + 1}.jpg`);
     });
-  // 🔥 التعديل هنا: خلينا الاسم session_id زي ما الباك إند مستني
-  const activeId = this.examId || localStorage.getItem('currentSessionId') || '';
-  formData.append('session_id', activeId);
 
-  const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
-  const url = `https://ofoqai.runasp.net/api/v1/exam/verify-entry`;
+    // 👈 بنبعت الـ ExamSessionId الأصلي للفيريفاي زي ما هو
+    const activeId = this.examId || localStorage.getItem('currentSessionId') || '';
+    formData.append('session_id', activeId);
 
-  this.http.post<any>(url, formData, { headers }).subscribe({
-    next: (res) => {
-      this.isVerifying = false;
-      if (res.verified === true || res.verified === 'true') {
-        this.errorMessage = null;
-        this.successMessage = "⚡ Identity Verified successfully! Access granted.";
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+    const url = `https://ofoqai.runasp.net/api/v1/exam/verify-entry`;
 
-        this.serverSessionId = res.session_id;
+    this.http.post<any>(url, formData, { headers }).subscribe({
+      next: (res) => {
+        this.isVerifying = false;
+        if (res.verified === true || res.verified === 'true') {
+          this.errorMessage = null;
+          this.successMessage = "⚡ Identity Verified successfully! Access granted.";
 
-        if (res.session_id) {
-          localStorage.setItem('currentSessionId', res.session_id);
+          // 👇 التعديل هنا: هنحفظ الـ ID بتاع المراقبة باسم مختلف عشان ميبوظش الـ ExamSessionId الأصلي
+          if (res.session_id) {
+            localStorage.setItem('proctorSessionId', res.session_id); // ده للفيجين لو احتاجه
+          }
+
+          if (res.remaining_seconds) {
+             localStorage.setItem('examRemainingSeconds', res.remaining_seconds.toString());
+          }
+          if (res.exam_title) {
+             localStorage.setItem('examTitle', res.exam_title);
+          }
+
+          this.turnOffCamera();
+          this.isVerificationSuccessful = true;
+          this.cdr.detectChanges();
+        } else {
+          this.successMessage = null;
+          this.errorMessage = res.message || "Identity mismatch. Please center your face and try again.";
         }
-        if (res.remaining_seconds) {
-           localStorage.setItem('examRemainingSeconds', res.remaining_seconds.toString());
-        }
-        if (res.exam_title) {
-           localStorage.setItem('examTitle', res.exam_title);
-        }
-
-        this.turnOffCamera();
-        this.isVerificationSuccessful = true;
         this.cdr.detectChanges();
-      } else {
-        this.successMessage = null;
-        this.errorMessage = res.message || "Identity mismatch. Please center your face and try again.";
+      },
+      error: (err) => {
+        console.error('Biometric validation crashed:', err);
+        // ... (باقي الكود)
       }
-      this.cdr.detectChanges();
-    },
-    error: (err) => {
-      console.error('Biometric validation crashed:', err);
-      this.isVerifying = false;
-      this.successMessage = null;
-      this.errorMessage = "Biometric sync timeout. Please verify configuration.";
-      this.cdr.detectChanges();
-    }
-  });
-}
+    });
+  }
 
   startActualExam() {
-    const finalSessionId = this.serverSessionId || localStorage.getItem('currentSessionId') || this.examId;
+    // 👇 التعديل هنا: هنروح لصفحة الامتحان باستخدام الـ ExamSessionId الأصلي اللي جاي من الداشبورد!
+    const originalExamSessionId = this.examId || localStorage.getItem('currentSessionId');
     const token = localStorage.getItem('token');
 
-    if (!finalSessionId) {
-      this.errorMessage = "Error: No active session ID found to start the exam.";
+    if (!originalExamSessionId) {
+      this.errorMessage = "Error: No active Exam Session ID found to start the exam.";
       this.cdr.detectChanges();
       return;
     }
@@ -599,16 +619,18 @@ export class IdentityVerifyComponent implements OnInit, AfterViewInit, OnDestroy
     const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
     const url = `https://ofoqai.runasp.net/api/v1/exam/start`;
 
-    const body = { session_id: finalSessionId };
+    // 👈 بنبعت الـ ExamSessionId الأصلي هنا كمان
+    const body = { session_id: originalExamSessionId };
 
     this.http.post(url, body, { headers }).subscribe({
       next: (res) => {
         console.log('✅ Exam session successfully recorded in Database!', res);
-        this.router.navigate(['/exam', finalSessionId]);
+        // التوجيه للـ Editor بالـ ExamSessionId الأصلي! 🚀
+        this.router.navigate(['/exam', originalExamSessionId]);
       },
       error: (err) => {
         console.warn('Server error on start endpoint, triggering fallback...', err);
-        this.router.navigate(['/exam', finalSessionId]);
+        this.router.navigate(['/exam', originalExamSessionId]);
       }
     });
   }

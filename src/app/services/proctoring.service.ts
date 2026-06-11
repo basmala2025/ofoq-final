@@ -20,8 +20,14 @@ export class ProctoringService {
   async startProctoring(videoElement: HTMLVideoElement, sessionId: string | null) {
     try {
       this.mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { width: 640 },
-        audio: {
+// استبدلي:
+// video: { width: 640 },
+
+// بده:
+video: {
+  width: { min: 1280, ideal: 1920 },
+  height: { min: 720, ideal: 1080 }
+},        audio: {
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: false,

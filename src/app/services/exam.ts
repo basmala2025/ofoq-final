@@ -45,30 +45,32 @@ export class ExamService {
   }
 
   // 👇 1. تعديل ميثود الـ getDetails عشان تاخد الـ sessionId في الـ URL
-  getExamDetails(sessionId: string): Observable<any> {
-    return this.http.get(`${this.baseUrl}/details/${sessionId}`, { headers: this.getHeaders() });
+getExamDetails(examSessionId: string): Observable<any> {
+    return this.http.get(`${this.baseUrl}/details/${examSessionId}`, { headers: this.getHeaders() });
   }
 
-  // 👇 2. تعديل باقي الريكويستات عشان تبعت الـ session_id في الـ Body
-  logTabSwitch(sessionId: string): Observable<any> {
-    return this.http.post(`${this.baseUrl}/log-tab-switch`, { session_id: sessionId }, { headers: this.getHeaders() });
+  // 👇 الباك إند قال بياخد examId في الـ body
+  logTabSwitch(examSessionId: string): Observable<any> {
+    return this.http.post(`${this.baseUrl}/log-tab-switch`, { examId: examSessionId }, { headers: this.getHeaders() });
   }
 
-  runSandbox(sessionId: string, sourceCode: string, language: string): Observable<any> {
-    return this.http.post(`${this.baseUrl}/run-sandbox`, { session_id: sessionId, sourceCode, language }, { headers: this.getHeaders() });
+  // 👇 الباك إند قال بياخد examId في الـ body
+  runSandbox(examSessionId: string, sourceCode: string, language: string): Observable<any> {
+    return this.http.post(`${this.baseUrl}/run-sandbox`, { examId: examSessionId, sourceCode, language }, { headers: this.getHeaders() });
   }
 
-  submitExam(sessionId: string, sourceCode: string): Observable<any> {
-    return this.http.post(`${this.baseUrl}/submit/${sessionId}`, { sourceCode }, { headers: this.getHeaders() });
+  // 👇 الباك إند قال بياخد examId في الـ URL
+  submitExam(examSessionId: string, sourceCode: string): Observable<any> {
+    return this.http.post(`${this.baseUrl}/submit/${examSessionId}`, { sourceCode }, { headers: this.getHeaders() });
   }
 
-  getExamResult(sessionId: string, studentId?: string): Observable<any> {
-    let url = `${this.baseUrl}/result/${sessionId}`;
+  // 👇 الباك إند قال بياخد examId في الـ URL
+  getExamResult(examSessionId: string, studentId?: string): Observable<any> {
+    let url = `${this.baseUrl}/result/${examSessionId}`;
     if (studentId) url += `?studentId=${studentId}`;
     return this.http.get(url, { headers: this.getHeaders() });
   }
-
-  stopHubConnection() {
+    stopHubConnection() {
     if (this.hubConnection) {
       this.hubConnection.stop();
     }
