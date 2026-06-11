@@ -606,13 +606,14 @@ const vidW = video.videoWidth;
     });
   }
 
-  startActualExam() {
-    // 👇 التعديل هنا: هنروح لصفحة الامتحان باستخدام الـ ExamSessionId الأصلي اللي جاي من الداشبورد!
-    const originalExamSessionId = this.examId || localStorage.getItem('currentSessionId');
+ startActualExam() {
+    // 1. هنجيب الـ 2 IDs اللي حفظناهم من ريسبونس الفيريفاي
+    const examSessionId = localStorage.getItem('currentSessionId'); // (الملك 👑) عشان التوجيه للـ Editor
+    const proctorSessionId = localStorage.getItem('proctorSessionId'); // ده الـ session_id اللي الباك إند عايزه للـ Start
     const token = localStorage.getItem('token');
 
-    if (!originalExamSessionId) {
-      this.errorMessage = "Error: No active Exam Session ID found to start the exam.";
+    if (!examSessionId || !proctorSessionId) {
+      this.errorMessage = "Error: Missing session data to start the exam.";
       this.cdr.detectChanges();
       return;
     }
@@ -621,20 +622,22 @@ const vidW = video.videoWidth;
     this.cdr.detectChanges();
 
     const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+
+    // مسار الريكويست
     const url = `https://ofoqai.runasp.net/api/v1/exam/start`;
 
-    // 👈 بنبعت الـ ExamSessionId الأصلي هنا كمان
-    const body = { session_id: originalExamSessionId };
+    // 👇 التعديل هنا: بنبعت الـ session_id في الـ Body بتاع الريكويست
+    const body = { session_id: proctorSessionId };
 
     this.http.post(url, body, { headers }).subscribe({
       next: (res) => {
         console.log('✅ Exam session successfully recorded in Database!', res);
-        // التوجيه للـ Editor بالـ ExamSessionId الأصلي! 🚀
-        this.router.navigate(['/exam', originalExamSessionId]);
+        // 🚀 التوجيه لصفحة الامتحان باستخدام الـ ExamSessionId الأساسي
+        this.router.navigate(['/exam', examSessionId]);
       },
       error: (err) => {
         console.warn('Server error on start endpoint, triggering fallback...', err);
-        this.router.navigate(['/exam', originalExamSessionId]);
+        this.router.navigate(['/exam', examSessionId]);
       }
     });
   }

@@ -13,7 +13,7 @@ export class ProctoringService {
   private streamInterval: any;
   private verifyInterval: any; // تايمر التوثيق الدوري
 
-  private readonly VOICE_API_URL = 'https://gannaeslam38-ofoq-ai-engine.hf.space/analyze_audio';
+  // private readonly VOICE_API_URL = 'https://gannaeslam38-ofoq-ai-engine.hf.space/analyze_audio';
 
   constructor(private examState: ExamStateService) {}
 
@@ -172,7 +172,8 @@ canvas.toBlob((blob: Blob | null) => {
     this.audioRecorder.onstop = () => {
       if (!this.examState.isExamFinished && chunks.length > 0) {
         const audioBlob = new Blob(chunks, { type: 'audio/webm' });
-        this.sendAudioToHuggingFace(audioBlob);
+
+        this.sendAudioToBackend(audioBlob);
       }
       if (!this.examState.isExamFinished) {
         setTimeout(() => this.startAudioMonitoring(), 500);
@@ -187,29 +188,42 @@ canvas.toBlob((blob: Blob | null) => {
     }, 10000);
   }
 
-  private async sendAudioToHuggingFace(audioBlob: Blob) {
+ private async sendAudioToBackend(audioBlob: Blob) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000); // ⏱️ إحباط الطلب بعد 5 ثواني
 
+    const token = localStorage.getItem('token');
+    // 👇 زي ما الباك إند طلب، هنجيب الـ ExamSessionId الأساسي
+    const examSessionId = localStorage.getItem('currentSessionId');
+
+    if (!token || !examSessionId) return;
+
+    // 👇 مسار الـ API الجديد بتاع الباك إند
+    const url = `https://ofoqai.runasp.net/api/v1/exam/voice-analysis/${examSessionId}`;
+
     const formData = new FormData();
-    formData.append('file', audioBlob, 'exam_audio.webm');
+    formData.append('file', audioBlob, 'exam_audio.webm'); // تأكدي إن الباك إند مستني الملف باسم 'file'
 
     try {
-      const response = await fetch(this.VOICE_API_URL, {
+      const response = await fetch(url, {
         method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}` // 👈 إضافة التوكن لأن ده API داخلي
+        },
         body: formData,
-        signal: controller.signal // 👈 ربط الـ Timeout بالريكويست
+        signal: controller.signal
       });
-      clearTimeout(timeoutId); // 🧹 لو رد بسرعة، نلغي التايمر
+      clearTimeout(timeoutId);
 
       if (!response.ok) return;
 
       const data = await response.json();
-      if (data && (data.label === 1 || data.status !== 'Normal')) {
+
+      // 👇 الشرط ده محتاج يتظبط حسب شكل ريسبونس الباك إند لما بيكتشف غش
+      if (data && (data.is_cheating === true || data.label === 1 || data.status !== 'Normal')) {
         this.examState.processAIVerdict('CHEATING_ALARM', `VOICE ALARM: Suspicious audio detected!`, this.examState.violationCount + 1);
       }
     } catch (error: any) {
-      // التعامل الذكي مع الإلغاء
       if (error.name === 'AbortError') {
         console.warn('⚠️ Audio request timed out, skipping to free bandwidth.');
       } else {

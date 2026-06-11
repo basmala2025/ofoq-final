@@ -81,8 +81,7 @@ export class ExamEditorComponent implements OnInit, AfterViewInit, OnDestroy {
     }, 500);
   }
 
-  loadExamProblemDetails() {
-    // الـ API الخاص بالامتحان بياخد الـ examSessionId
+loadExamProblemDetails() {
     this.examService.getExamDetails(this.examSessionId).subscribe({
       next: (res) => {
         this.problemTitle = res.title || 'Untitled Assessment';
@@ -92,8 +91,12 @@ export class ExamEditorComponent implements OnInit, AfterViewInit, OnDestroy {
         const langLower = res.constraints?.allowedLanguage?.toLowerCase() || '';
         this.allowedLanguage = langLower.includes('c++') || langLower.includes('cpp') ? 'cpp' : 'python';
 
-        const remainingSeconds = res.remainingSeconds || res.constraints?.timeLimitSec || 3600;
-        this.startTimerCountdown(remainingSeconds);
+        // 👇 التعديل هنا: أخدنا الـ durationMinutes وضربناها في 60 عشان نحولها لثواني
+        const durationInMinutes = res.durationMinutes || res.exam?.durationMinutes || res.constraints?.timeLimitSec / 60 || 60;
+        const totalSeconds = durationInMinutes * 60;
+
+        // نشغل التايمر بالثواني
+        this.startTimerCountdown(totalSeconds);
 
         this.initMonacoEditor();
       },
