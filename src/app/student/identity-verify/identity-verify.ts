@@ -506,13 +506,17 @@ export class IdentityVerifyComponent implements OnInit, AfterViewInit, OnDestroy
     const capturedBlobs: Blob[] = [];
     let frameCount = 0;
 
-    const vidW = video.videoWidth;
+const vidW = video.videoWidth;
     const vidH = video.videoHeight;
+
+    // 1. حسابات القص من المنتصف
     const portraitHeight = vidH;
     const portraitWidth = vidH * (3 / 4);
-    canvas.width = portraitWidth;
-    canvas.height = portraitHeight;
     const startX = (vidW - portraitWidth) / 2;
+
+    // 2. إجبار الكانفاس على المقاس المطلوب (التعديل الأول بتاعك)
+    canvas.width = 540;
+    canvas.height = 720;
 
     const captureInterval = setInterval(() => {
       if (frameCount >= 5) {
@@ -524,10 +528,11 @@ export class IdentityVerifyComponent implements OnInit, AfterViewInit, OnDestroy
         return;
       }
 
+      // 3. رسم الصورة (التعديل التاني هنا: خلينا الوجهة 540 و 720)
       context.drawImage(
         video,
-        startX, 0, portraitWidth, portraitHeight,
-        0, 0, portraitWidth, portraitHeight
+        startX, 0, portraitWidth, portraitHeight, // المصدر (الفيديو المقصوص)
+        0, 0, 540, 720                            // 👈 الوجهة النهائية للرسم
       );
 
       canvas.toBlob((blob) => {
@@ -539,8 +544,7 @@ export class IdentityVerifyComponent implements OnInit, AfterViewInit, OnDestroy
         }
       }, 'image/jpeg', 0.95);
 
-    }, 400);
-  }
+    }, 400); }
 // دالة مؤقتة عشان تنزلي الصور وتشوفيها (امسحيها قبل ما ترفعي الكود النهائي)
   private downloadFramesForDebugging(blobs: Blob[]) {
     blobs.forEach((blob, index) => {

@@ -208,7 +208,7 @@ export class ExamEditorComponent implements OnInit, AfterViewInit, OnDestroy {
 
     const sourceCode = this.editor.getValue();
 
-    // تشغيل الكود باستخدام الـ examSessionId
+    // examSessionId
     this.examService.runSandbox(this.examSessionId, sourceCode, this.allowedLanguage).subscribe({
       next: (res) => {
         this.compileMessage = res.compileOutput;
@@ -230,7 +230,7 @@ export class ExamEditorComponent implements OnInit, AfterViewInit, OnDestroy {
 
     const sourceCode = this.editor.getValue();
 
-    // التسليم النهائي باستخدام الـ examSessionId
+    // examSessionId
     this.examService.submitExam(this.examSessionId, sourceCode).subscribe({
       next: (res) => {
         this.cleanupEnvironment();
