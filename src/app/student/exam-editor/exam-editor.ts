@@ -6,7 +6,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { ExamService } from '../exam';
-import { ProctoringService } from '../../services/proctoring.service'; // 👈 تأكدي من مسار الخدمة
+import { ProctoringService } from '../../services/proctoring.service';
 import loader from '@monaco-editor/loader';
 
 @Component({
@@ -19,10 +19,13 @@ import loader from '@monaco-editor/loader';
 export class ExamEditorComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('editorContainer', { static: true }) editorContainer!: ElementRef;
 
-  // 👈 ربط الفيديو المخفي من الـ HTML بالكومبوننت
+  // عنصر الفيديو المخفي الخاص بالمراقبة
   @ViewChild('proctoringVideo') proctoringVideo!: ElementRef<HTMLVideoElement>;
 
-  sessionId!: string;
+  // فصلنا الـ IDs بناءً على تعليمات الباك إند
+  examSessionId!: string;
+  proctorSessionId!: string;
+
   editor: any;
   savedCodeKey = 'ofoq_exam_backup';
 
@@ -49,15 +52,18 @@ export class ExamEditorComponent implements OnInit, AfterViewInit, OnDestroy {
     private examService: ExamService,
     private http: HttpClient,
     private cdr: ChangeDetectorRef,
-    private proctoringService: ProctoringService // 👈 حقن خدمة المراقبة هنا
+    private proctoringService: ProctoringService
   ) {}
 
   ngOnInit() {
-    // جلب الـ sessionId من الـ URL أو الـ LocalStorage
-    this.sessionId = this.route.snapshot.paramMap.get('id') || this.route.snapshot.paramMap.get('examId') || localStorage.getItem('currentSessionId')!;
+    // 1. جلب الـ ExamSessionId الأصلي للـ Exam APIs
+    this.examSessionId = this.route.snapshot.paramMap.get('id') || this.route.snapshot.paramMap.get('examId') || localStorage.getItem('currentSessionId')!;
 
-    if(this.sessionId) {
-      localStorage.setItem('currentSessionId', this.sessionId);
+    // 2. جلب الـ ProctorSessionId الخاص بالمراقبة (ولو مش موجود هنستخدم الأصلي كاحتياطي)
+    this.proctorSessionId = localStorage.getItem('proctorSessionId') || this.examSessionId;
+
+    if(this.examSessionId) {
+      localStorage.setItem('currentSessionId', this.examSessionId);
     }
 
     this.loadExamProblemDetails();
@@ -66,17 +72,18 @@ export class ExamEditorComponent implements OnInit, AfterViewInit, OnDestroy {
   ngAfterViewInit() {
     this.enterFullScreen();
 
-    // 👈 تشغيل المراقبة الشاملة (كاميرا، صوت، فيجين، SignalR) بعد تحميل الواجهة
+    // تشغيل المراقبة باستخدام الـ proctorSessionId
     setTimeout(() => {
       if (this.proctoringVideo && this.proctoringVideo.nativeElement) {
-        this.proctoringService.startProctoring(this.proctoringVideo.nativeElement, this.sessionId);
-        console.log('👀 AI Proctoring (Vision & Audio) Started!');
+        this.proctoringService.startProctoring(this.proctoringVideo.nativeElement, this.proctorSessionId);
+        console.log('👀 AI Proctoring Started with ID:', this.proctorSessionId);
       }
     }, 500);
   }
 
   loadExamProblemDetails() {
-    this.examService.getExamDetails(this.sessionId).subscribe({
+    // الـ API الخاص بالامتحان بياخد الـ examSessionId
+    this.examService.getExamDetails(this.examSessionId).subscribe({
       next: (res) => {
         this.problemTitle = res.title || 'Untitled Assessment';
         this.problemDescription = res.description || 'No descriptive tasks provided.';
@@ -145,10 +152,12 @@ export class ExamEditorComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   triggerViolation(type: string) {
-    this.examService.logTabSwitch(this.sessionId).subscribe({
+    // إرسال محاولة الغش باستخدام الـ examSessionId
+    this.examService.logTabSwitch(this.examSessionId).subscribe({
       next: (res: any) => {
         this.violationCount = res.currentViolationCount;
 
+        // النظام بيطلع تحذيرات للمستخدم قبل تطبيق أي عقوبة إغلاق
         if (res.shouldTerminate) {
           this.isRedAlarm = true;
           this.securityMessage = res.serverMessage || 'Integrity threshold breached. Session revoked.';
@@ -199,7 +208,8 @@ export class ExamEditorComponent implements OnInit, AfterViewInit, OnDestroy {
 
     const sourceCode = this.editor.getValue();
 
-    this.examService.runSandbox(this.sessionId, sourceCode, this.allowedLanguage).subscribe({
+    // تشغيل الكود باستخدام الـ examSessionId
+    this.examService.runSandbox(this.examSessionId, sourceCode, this.allowedLanguage).subscribe({
       next: (res) => {
         this.compileMessage = res.compileOutput;
         this.consoleOutput = res.isPassed
@@ -220,10 +230,11 @@ export class ExamEditorComponent implements OnInit, AfterViewInit, OnDestroy {
 
     const sourceCode = this.editor.getValue();
 
-    this.examService.submitExam(this.sessionId, sourceCode).subscribe({
+    // التسليم النهائي باستخدام الـ examSessionId
+    this.examService.submitExam(this.examSessionId, sourceCode).subscribe({
       next: (res) => {
         this.cleanupEnvironment();
-        this.router.navigate(['/exam/result', this.sessionId]);
+        this.router.navigate(['/exam/result', this.examSessionId]);
       },
       error: (err) => console.error('Finalization request crashed:', err)
     });
@@ -231,10 +242,10 @@ export class ExamEditorComponent implements OnInit, AfterViewInit, OnDestroy {
 
   forceSubmitAndExit() {
     const backupCode = this.editor ? this.editor.getValue() : (localStorage.getItem(this.savedCodeKey) || '');
-    this.examService.submitExam(this.sessionId, backupCode).subscribe({
+    this.examService.submitExam(this.examSessionId, backupCode).subscribe({
       next: () => {
         this.cleanupEnvironment();
-        this.router.navigate(['/exam/result', this.sessionId]);
+        this.router.navigate(['/exam/result', this.examSessionId]);
       },
       error: () => {
         this.cleanupEnvironment();
@@ -252,7 +263,7 @@ export class ExamEditorComponent implements OnInit, AfterViewInit, OnDestroy {
     localStorage.removeItem(this.savedCodeKey);
     if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
 
-    // 👈 إيقاف كل مجسات المراقبة (الكاميرا والمايك والسوكيت) عند الخروج
+    // إيقاف كل مجسات المراقبة (الكاميرا والمايك والسوكيت) عند الخروج
     this.proctoringService.stopEverything();
     console.log('🛑 AI Proctoring Stopped & Environment Cleaned');
   }
