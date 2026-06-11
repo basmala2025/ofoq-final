@@ -582,10 +582,14 @@ const vidW = video.videoWidth;
           if (res.session_id) {
             localStorage.setItem('proctorSessionId', res.session_id); // ده للفيجين لو احتاجه
           }
+if (res.exam_session_id) {
+            localStorage.setItem('currentSessionId', res.exam_session_id);
+          }
 
           if (res.remaining_seconds) {
              localStorage.setItem('examRemainingSeconds', res.remaining_seconds.toString());
           }
+
           if (res.exam_title) {
              localStorage.setItem('examTitle', res.exam_title);
           }
@@ -608,11 +612,11 @@ const vidW = video.videoWidth;
 
  startActualExam() {
     // 1. هنجيب الـ 2 IDs اللي حفظناهم من ريسبونس الفيريفاي
-    const examSessionId = localStorage.getItem('currentSessionId'); // (الملك 👑) عشان التوجيه للـ Editor
-    const proctorSessionId = localStorage.getItem('proctorSessionId'); // ده الـ session_id اللي الباك إند عايزه للـ Start
+    const examSessionId = localStorage.getItem('currentSessionId') || this.examId;
+    const proctorSessionId = localStorage.getItem('proctorSessionId');
     const token = localStorage.getItem('token');
 
-    if (!examSessionId || !proctorSessionId) {
+  if (!examSessionId || !proctorSessionId) {
       this.errorMessage = "Error: Missing session data to start the exam.";
       this.cdr.detectChanges();
       return;
