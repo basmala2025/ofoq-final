@@ -609,14 +609,12 @@ if (res.exam_session_id) {
       }
     });
   }
-
- startActualExam() {
-    // 1. هنجيب الـ 2 IDs اللي حفظناهم من ريسبونس الفيريفاي
+startActualExam() {
     const examSessionId = localStorage.getItem('currentSessionId') || this.examId;
     const proctorSessionId = localStorage.getItem('proctorSessionId');
     const token = localStorage.getItem('token');
 
-  if (!examSessionId || !proctorSessionId) {
+    if (!examSessionId || !proctorSessionId) {
       this.errorMessage = "Error: Missing session data to start the exam.";
       this.cdr.detectChanges();
       return;
@@ -625,27 +623,23 @@ if (res.exam_session_id) {
     this.successMessage = "Preparing exam environment... Please wait.";
     this.cdr.detectChanges();
 
+    // 👇 السطرين دول هيفتحوا الفول سكرين بشكل شرعي لأن الطالب لسه دايس على الزرار
+    const el = document.documentElement as any;
+    if (el.requestFullscreen) el.requestFullscreen().catch(() => {});
+
     const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
-
-    // مسار الريكويست
     const url = `https://ofoqai.runasp.net/api/v1/exam/start`;
-
-    // 👇 التعديل هنا: بنبعت الـ session_id في الـ Body بتاع الريكويست
     const body = { session_id: proctorSessionId };
 
     this.http.post(url, body, { headers }).subscribe({
       next: (res) => {
-        console.log('✅ Exam session successfully recorded in Database!', res);
-        // 🚀 التوجيه لصفحة الامتحان باستخدام الـ ExamSessionId الأساسي
         this.router.navigate(['/exam', examSessionId]);
       },
       error: (err) => {
-        console.warn('Server error on start endpoint, triggering fallback...', err);
         this.router.navigate(['/exam', examSessionId]);
       }
     });
   }
-
   private turnOffCamera() {
     if (this.mediaStream) {
       this.mediaStream.getTracks().forEach(track => track.stop());

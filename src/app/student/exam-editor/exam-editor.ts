@@ -55,22 +55,25 @@ export class ExamEditorComponent implements OnInit, AfterViewInit, OnDestroy {
     private proctoringService: ProctoringService
   ) {}
 
-  ngOnInit() {
-    // 1. جلب الـ ExamSessionId الأصلي للـ Exam APIs
+ngOnInit() {
     this.examSessionId = this.route.snapshot.paramMap.get('id') || this.route.snapshot.paramMap.get('examId') || localStorage.getItem('currentSessionId')!;
-
-    // 2. جلب الـ ProctorSessionId الخاص بالمراقبة (ولو مش موجود هنستخدم الأصلي كاحتياطي)
     this.proctorSessionId = localStorage.getItem('proctorSessionId') || this.examSessionId;
 
     if(this.examSessionId) {
       localStorage.setItem('currentSessionId', this.examSessionId);
     }
 
+    // 👈 1. استرجاع الإنذارات من الـ LocalStorage لو الطالب عمل ريفريش
+    const savedViolations = localStorage.getItem('ofoq_violation_count');
+    if (savedViolations) {
+      this.violationCount = parseInt(savedViolations, 10);
+    }
+
     this.loadExamProblemDetails();
   }
 
   ngAfterViewInit() {
-    this.enterFullScreen();
+    // this.enterFullScreen();
 
     // تشغيل المراقبة باستخدام الـ proctorSessionId
     setTimeout(() => {
@@ -80,7 +83,6 @@ export class ExamEditorComponent implements OnInit, AfterViewInit, OnDestroy {
       }
     }, 500);
   }
-
 loadExamProblemDetails() {
     this.examService.getExamDetails(this.examSessionId).subscribe({
       next: (res) => {
@@ -91,22 +93,20 @@ loadExamProblemDetails() {
         const langLower = res.constraints?.allowedLanguage?.toLowerCase() || '';
         this.allowedLanguage = langLower.includes('c++') || langLower.includes('cpp') ? 'cpp' : 'python';
 
-        // 👇 التعديل هنا: بنشوف هل فيه وقت متخزن من قبل الريفرش؟
+        // 👈 3. أولوية قراءة الوقت من الـ LocalStorage
         const savedSeconds = localStorage.getItem('examRemainingSeconds');
-
         let totalSeconds: number;
-        if (savedSeconds) {
-          // لو لقاه (يعني الطالب عمل ريفريش)، بياخد الوقت اللي وقف عنده بالظبط
+
+        if (savedSeconds && parseInt(savedSeconds, 10) > 0) {
+          // لو في وقت متخزن، كمل من نفس الثانية اللي وقف عندها
           totalSeconds = parseInt(savedSeconds, 10);
         } else {
-          // لو مالقاهوش (يعني أول مرة يدخل الامتحان)، بياخد الوقت الأصلي من السيرفر
-          const durationInMinutes = res.durationMinutes || 60;
+          // لو دي أول مرة يفتح الامتحان (مفيش ريفريش)، احسب من الـ API
+          const durationInMinutes = res.durationMinutes || res.exam?.durationMinutes || res.constraints?.timeLimitSec / 60 || 60;
           totalSeconds = durationInMinutes * 60;
         }
 
-        // تشغيل التايمر بالوقت الذكي
         this.startTimerCountdown(totalSeconds);
-
         this.initMonacoEditor();
       },
       error: (err) => console.error("Error fetching exam details:", err)
@@ -129,18 +129,16 @@ loadExamProblemDetails() {
         seconds--;
         updateDisplay(seconds);
 
-        // 👇 السطر ده السحر اللي هيحمينا من الريفرش: بيحدث الثواني في الـ LocalStorage أول بأول
+        // 👈 4. تسجيل الوقت المتبقي في كل ثانية
         localStorage.setItem('examRemainingSeconds', seconds.toString());
       } else {
         clearInterval(this.timerInterval);
         this.timerDisplay = "00:00";
-
-        // الامتحان خلص، نمسح التايمر من الـ LocalStorage
-        localStorage.removeItem('examRemainingSeconds');
         this.forceSubmitAndExit();
       }
     }, 1000);
   }
+
 
   // =========================================================================
   // 🔐 ANTI-CHEAT INTEGRITY HOOKS
@@ -168,14 +166,14 @@ loadExamProblemDetails() {
       this.triggerViolation('Tab Switch Event Registered');
     }
   }
-
-  triggerViolation(type: string) {
-    // إرسال محاولة الغش باستخدام الـ examSessionId
+triggerViolation(type: string) {
     this.examService.logTabSwitch(this.examSessionId).subscribe({
       next: (res: any) => {
         this.violationCount = res.currentViolationCount;
 
-        // النظام بيطلع تحذيرات للمستخدم قبل تطبيق أي عقوبة إغلاق
+        // 👈 2. حفظ عدد الإنذارات في الـ LocalStorage
+        localStorage.setItem('ofoq_violation_count', this.violationCount.toString());
+
         if (res.shouldTerminate) {
           this.isRedAlarm = true;
           this.securityMessage = res.serverMessage || 'Integrity threshold breached. Session revoked.';
@@ -250,7 +248,7 @@ loadExamProblemDetails() {
 
     this.examService.submitExam(this.examSessionId, sourceCode).subscribe({
       next: (res) => {
-        this.cleanupEnvironment(); 
+        this.cleanupEnvironment();
         this.router.navigate(['/exam/result', this.examSessionId]);
       },
       error: (err) => console.error('Finalization request crashed:', err)
