@@ -148,7 +148,7 @@ export class ProctoringService {
     }, 5 * 60 * 1000); // Execute every 5 minutes
   }
 
-  private startAudioMonitoring() {
+ private startAudioMonitoring() {
     if (!this.mediaStream || this.examState.isExamFinished) return;
 
     this.audioRecorder = new MediaRecorder(this.mediaStream);
@@ -169,17 +169,18 @@ export class ProctoringService {
     };
 
     this.audioRecorder.start();
-    // Record in 10-second intervals
+
+    // ✅ تعديل: خليناها 5 ثواني عشان حجم الملف يبقى خفيف جداً وميحصلش Delay في الـ Network
     setTimeout(() => {
       if (this.audioRecorder && this.audioRecorder.state === 'recording') {
         this.audioRecorder.stop();
       }
-    }, 10000);
+    }, 5000);
   }
-
   private async sendAudioToBackend(audioBlob: Blob) {
+    // ✅ رفعنا الوقت لـ 15 ثانية عشان نمنع الـ (canceled) والـ Abort المبكر
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
 
     const token = localStorage.getItem('token');
     const examSessionId = localStorage.getItem('currentSessionId');
@@ -188,8 +189,6 @@ export class ProctoringService {
 
     const url = `https://ofoqai.runasp.net/api/v1/exam/voice-analysis/${examSessionId}`;
     const formData = new FormData();
-
-    // ✅ التعديل السحري: غيرنا 'file' إلى 'audio' ليتوافق مع الـ Validation بتاع الباك إند
     formData.append('audio', audioBlob, 'exam_audio.webm');
 
     try {
@@ -204,12 +203,15 @@ export class ProctoringService {
       if (!response.ok) return;
 
       const data = await response.json();
+      console.log('🎤 [OFOQ] Audio Analysis Response Received:', data);
 
       if (data && (data.is_cheating === true || data.label === 1 || data.status !== 'Normal')) {
         this.examState.processAIVerdict('CHEATING_ALARM', `VOICE ALARM: Suspicious audio detected!`);
       }
     } catch (error: any) {
-      if (error.name !== 'AbortError') {
+      if (error.name === 'AbortError') {
+        console.warn('⚠️ Audio request timed out on server side, keeping stream alive.');
+      } else {
         console.error('❌ Audio API Error:', error);
       }
     }
