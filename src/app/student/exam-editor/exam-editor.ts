@@ -8,6 +8,7 @@ import { HttpClient } from '@angular/common/http';
 import { ExamService } from '../exam';
 import { ProctoringService } from '../../services/proctoring.service';
 import loader from '@monaco-editor/loader';
+import { ExamStateService } from '../../services/exam-state.services';
 
 @Component({
   selector: 'app-exam-editor',
@@ -18,14 +19,10 @@ import loader from '@monaco-editor/loader';
 })
 export class ExamEditorComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('editorContainer', { static: true }) editorContainer!: ElementRef;
-
-  // عنصر الفيديو المخفي الخاص بالمراقبة
   @ViewChild('proctoringVideo') proctoringVideo!: ElementRef<HTMLVideoElement>;
 
-  // فصلنا الـ IDs بناءً على تعليمات الباك إند
   examSessionId!: string;
   proctorSessionId!: string;
-
   editor: any;
   savedCodeKey = 'ofoq_exam_backup';
 
@@ -37,7 +34,7 @@ export class ExamEditorComponent implements OnInit, AfterViewInit, OnDestroy {
   allowedLanguage = 'cpp';
 
   violationCount = 0;
-  consoleOutput = 'System output idle. Click "Run Code" to benchmark calculations.';
+  consoleOutput = 'System idle. Ready to execute.';
   compileMessage = '';
   isLoading = false;
 
@@ -52,38 +49,48 @@ export class ExamEditorComponent implements OnInit, AfterViewInit, OnDestroy {
     private examService: ExamService,
     private http: HttpClient,
     private cdr: ChangeDetectorRef,
-    private proctoringService: ProctoringService
+    private proctoringService: ProctoringService,
+    private examState: ExamStateService
   ) {}
 
-ngOnInit() {
+  ngOnInit() {
     this.examSessionId = this.route.snapshot.paramMap.get('id') || this.route.snapshot.paramMap.get('examId') || localStorage.getItem('currentSessionId')!;
     this.proctorSessionId = localStorage.getItem('proctorSessionId') || this.examSessionId;
 
-    if(this.examSessionId) {
+    if (this.examSessionId) {
       localStorage.setItem('currentSessionId', this.examSessionId);
     }
 
-    // 👈 1. استرجاع الإنذارات من الـ LocalStorage لو الطالب عمل ريفريش
+    // 1. Restore violation count if the user refreshes the page
     const savedViolations = localStorage.getItem('ofoq_violation_count');
     if (savedViolations) {
       this.violationCount = parseInt(savedViolations, 10);
+      if (this.violationCount >= 2) this.isRedAlarm = true;
     }
+
+    // 2. Subscribe to AI Security Events Stream
+    this.examState.securityEvents$.subscribe(event => {
+      if (event.type === 'WARNING') {
+        // Minor infractions (< 7s) trigger local UI warnings
+        this.showWarning(`AI Vision: ${event.msg}`);
+      } else if (event.type === 'CHEATING_ALARM') {
+        // Severe infractions trigger official backend alarms
+        this.triggerAlarm(`AI Alert: ${event.msg}`);
+      }
+    });
 
     this.loadExamProblemDetails();
   }
 
   ngAfterViewInit() {
-    // this.enterFullScreen();
-
-    // تشغيل المراقبة باستخدام الـ proctorSessionId
     setTimeout(() => {
       if (this.proctoringVideo && this.proctoringVideo.nativeElement) {
         this.proctoringService.startProctoring(this.proctoringVideo.nativeElement, this.proctorSessionId);
-        console.log('👀 AI Proctoring Started with ID:', this.proctorSessionId);
       }
     }, 500);
   }
-loadExamProblemDetails() {
+
+  loadExamProblemDetails() {
     this.examService.getExamDetails(this.examSessionId).subscribe({
       next: (res) => {
         this.problemTitle = res.title || 'Untitled Assessment';
@@ -93,15 +100,13 @@ loadExamProblemDetails() {
         const langLower = res.constraints?.allowedLanguage?.toLowerCase() || '';
         this.allowedLanguage = langLower.includes('c++') || langLower.includes('cpp') ? 'cpp' : 'python';
 
-        // 👈 3. أولوية قراءة الوقت من الـ LocalStorage
+        // Read time from LocalStorage primarily to survive refreshes
         const savedSeconds = localStorage.getItem('examRemainingSeconds');
         let totalSeconds: number;
 
         if (savedSeconds && parseInt(savedSeconds, 10) > 0) {
-          // لو في وقت متخزن، كمل من نفس الثانية اللي وقف عندها
           totalSeconds = parseInt(savedSeconds, 10);
         } else {
-          // لو دي أول مرة يفتح الامتحان (مفيش ريفريش)، احسب من الـ API
           const durationInMinutes = res.durationMinutes || res.exam?.durationMinutes || res.constraints?.timeLimitSec / 60 || 60;
           totalSeconds = durationInMinutes * 60;
         }
@@ -128,8 +133,6 @@ loadExamProblemDetails() {
       if (seconds > 0) {
         seconds--;
         updateDisplay(seconds);
-
-        // 👈 4. تسجيل الوقت المتبقي في كل ثانية
         localStorage.setItem('examRemainingSeconds', seconds.toString());
       } else {
         clearInterval(this.timerInterval);
@@ -139,7 +142,6 @@ loadExamProblemDetails() {
     }, 1000);
   }
 
-
   // =========================================================================
   // 🔐 ANTI-CHEAT INTEGRITY HOOKS
   // =========================================================================
@@ -147,48 +149,57 @@ loadExamProblemDetails() {
   @HostListener('document:contextmenu', ['$event'])
   preventRightClick(e: MouseEvent) {
     e.preventDefault();
-    this.triggerViolation('Right-Click Context Menu Blocked');
+    this.showWarning('Right-Click Context Menu Blocked'); // Warning Only
   }
 
   @HostListener('document:keydown', ['$event'])
   handleKeyboard(e: KeyboardEvent) {
     const key = e.key.toLowerCase();
     const ctrl = e.ctrlKey || e.metaKey;
-    if ((ctrl && ['c', 'v', 'a', 'x', 's'].includes(key)) || e.key === 'f12') {
+    if ((ctrl && ['c', 'v', 'a', 'x', 's', 'z'].includes(key)) || e.key === 'f12') {
       e.preventDefault();
-      this.triggerViolation(`Security Bypass Attempt: Ctrl+${key.toUpperCase()}`);
+      this.showWarning(`Security Bypass Attempt: Ctrl+${key.toUpperCase()}`); // Warning Only
     }
   }
 
   @HostListener('document:visibilitychange')
   onVisibilityChange() {
     if (document.hidden) {
-      this.triggerViolation('Tab Switch Event Registered');
+      this.triggerAlarm('Tab Switch Event Registered'); // Severe Alarm
     }
   }
-triggerViolation(type: string) {
+
+  // Local Warning: Yellow toast, NO backend log, NO count increment
+  showWarning(message: string) {
+    this.securityMessage = `⚠️ Warning: ${message}`;
+    this.isRedAlarm = false;
+    this.showSecurityToast = true;
+    setTimeout(() => this.showSecurityToast = false, 3000);
+  }
+
+  // Official Alarm: Red toast, Backend log, Count increments, Terminates at 3
+  triggerAlarm(reason: string) {
     this.examService.logTabSwitch(this.examSessionId).subscribe({
       next: (res: any) => {
-        this.violationCount = res.currentViolationCount;
-
-        // 👈 2. حفظ عدد الإنذارات في الـ LocalStorage
+        this.violationCount = res.currentViolationCount || (this.violationCount + 1);
         localStorage.setItem('ofoq_violation_count', this.violationCount.toString());
 
-        if (res.shouldTerminate) {
+        if (this.violationCount >= 3 || res.shouldTerminate) {
           this.isRedAlarm = true;
-          this.securityMessage = res.serverMessage || 'Integrity threshold breached. Session revoked.';
+          this.securityMessage = `CRITICAL: Maximum violations reached (3/3). Exam revoked.`;
           this.showSecurityToast = true;
 
           setTimeout(() => {
             this.forceSubmitAndExit();
           }, 3000);
         } else {
-          this.securityMessage = `⚠️ Security Warning: ${type}. Violations: ${this.violationCount}/3. Deduction Imposed: ${res.integrityScoreDeduction}`;
-          this.isRedAlarm = false;
+          this.securityMessage = `🚨 ALARM: ${reason}. Violations: ${this.violationCount}/3.`;
+          this.isRedAlarm = true;
           this.showSecurityToast = true;
           setTimeout(() => this.showSecurityToast = false, 4000);
         }
-      }
+      },
+      error: (err) => console.error("Error logging alarm to backend:", err)
     });
   }
 
@@ -224,7 +235,6 @@ triggerViolation(type: string) {
 
     const sourceCode = this.editor.getValue();
 
-    // examSessionId
     this.examService.runSandbox(this.examSessionId, sourceCode, this.allowedLanguage).subscribe({
       next: (res) => {
         this.compileMessage = res.compileOutput;
@@ -245,27 +255,66 @@ triggerViolation(type: string) {
     if (!confirm('Are you sure you want to finalize your submission?')) return;
 
     const sourceCode = this.editor.getValue();
+    this.isLoading = true;
 
     this.examService.submitExam(this.examSessionId, sourceCode).subscribe({
       next: (res) => {
+        this.saveResultData(res, sourceCode);
         this.cleanupEnvironment();
-        this.router.navigate(['/exam/result', this.examSessionId]);
+        this.router.navigate(['/results']);
       },
-      error: (err) => console.error('Finalization request crashed:', err)
+      error: (err) => {
+        console.error('Finalization request crashed:', err);
+        this.isLoading = false;
+      }
     });
   }
+
   forceSubmitAndExit() {
     const backupCode = this.editor ? this.editor.getValue() : (localStorage.getItem(this.savedCodeKey) || '');
+    this.isLoading = true;
+
     this.examService.submitExam(this.examSessionId, backupCode).subscribe({
-      next: () => {
+      next: (res) => {
+        this.saveResultData(res, backupCode);
         this.cleanupEnvironment();
-        this.router.navigate(['/exam/result', this.examSessionId]);
+        this.router.navigate(['/results']);
       },
       error: () => {
         this.cleanupEnvironment();
-        this.router.navigate(['/dashboard']);
+        this.router.navigate(['/dashboardstudent']);
       }
     });
+  }
+
+  private saveResultData(backendResponse: any, submittedCode: string) {
+    const linesOfCode = submittedCode ? submittedCode.split('\n').length : 0;
+    const finalExamTitle = this.problemTitle !== 'Loading assessment...'
+      ? this.problemTitle
+      : (localStorage.getItem('examTitle') || 'Final Assessment');
+
+    const finalScore = backendResponse.finalScore || 0;
+    const maxPoints = backendResponse.maxPoints || 100;
+    const percentageScore = maxPoints > 0 ? Math.round((finalScore / maxPoints) * 100) : 0;
+
+    const breakdown = backendResponse.breakdown || {};
+    const uiTestCases = [
+      { name: 'Coding Output', passed: breakdown.codingOutputScore > 0, status: `Score: ${breakdown.codingOutputScore || 0}` },
+      { name: 'Code Performance', passed: breakdown.performanceScore > 0, status: `Score: ${breakdown.performanceScore || 0}` },
+      { name: 'System Verdict', passed: backendResponse.status?.includes('Completed') || false, status: backendResponse.verdict || 'Evaluated' }
+    ];
+
+    const resultPayload = {
+      examTitle: finalExamTitle,
+      category: `${this.allowedLanguage.toUpperCase()} Programming`,
+      score: percentageScore,
+      timeTaken: this.timerDisplay,
+      totalLines: linesOfCode,
+      testCases: uiTestCases,
+      violations: this.violationCount
+    };
+
+    localStorage.setItem('ofoq_last_result', JSON.stringify(resultPayload));
   }
 
   enterFullScreen() {
@@ -274,22 +323,19 @@ triggerViolation(type: string) {
   }
 
   cleanupEnvironment() {
-    // التنظيف النهائي للداتا بعد تسليم الامتحان بنجاح
     localStorage.removeItem(this.savedCodeKey);
     localStorage.removeItem('examRemainingSeconds');
+    localStorage.removeItem('ofoq_violation_count');
 
     if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
+
     this.proctoringService.stopEverything();
-    console.log('🧹 Exam finalized. Backup data cleared safely.');
+    console.log('🛑 AI Proctoring Stopped & Environment Cleaned');
   }
 
   ngOnDestroy() {
-    // 1. إيقاف العداد
     if (this.timerInterval) clearInterval(this.timerInterval);
-
-    // 2. إيقاف الكاميرا والمايك والسوكيت فوراً عشان الكاميرا متفضلش منورة
     this.proctoringService.stopEverything();
     console.log('🛑 Component destroyed, proctoring paused.');
-
-    // 🔴 تم حذف this.cleanupEnvironment() من هنا عشان متمسحش الكود وقت الريفرش
-  }}
+  }
+}

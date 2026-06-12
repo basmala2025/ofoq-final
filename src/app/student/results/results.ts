@@ -37,20 +37,26 @@ export class Results implements OnInit {
   loadRealResults() {
     const data = localStorage.getItem('ofoq_last_result');
     if (data) {
-      const parsed = JSON.parse(data);
-      this.examTitle = parsed.examTitle;
-      this.category = parsed.category;
-      this.score = parsed.score; // النسبة المئوية المحسوبة
-      this.timeTaken = parsed.timeTaken; // الوقت المتبقي عند التسليم
-      this.totalLines = parsed.totalLines; // عدد سطور الكود
-      this.testCases = parsed.testCases; // البنود المفصلة (Coding Output, Performance, Verdict)
-      this.violations = parsed.violations; // عدد المخالفات الأمنية
+      try {
+        const parsed = JSON.parse(data);
+        this.examTitle = parsed.examTitle || 'OFOQ Assessment';
+        this.category = parsed.category || 'Programming';
+        this.score = parsed.score || 0;
+        this.timeTaken = parsed.timeTaken || '00:00';
+        this.totalLines = parsed.totalLines || 0;
+        this.testCases = parsed.testCases || [];
+        this.violations = parsed.violations || 0;
+      } catch (error) {
+        // لو الداتا اللي متخزنة كان فيها مشكلة، مش هنوقف الصفحة
+        console.error('Error parsing exam results from memory:', error);
+        localStorage.removeItem('ofoq_last_result'); // نمسح الداتا البايظة
+        this.router.navigate(['/dashboardstudent']); // نرجعه للداشبورد
+      }
     } else {
-      // إذا حاول الطالب دخول الصفحة بدون امتحان، يتم توجيهه للداشبورد مباشرة
+      // إذا حاول الطالب دخول الصفحة بدون امتحان
       this.router.navigate(['/dashboardstudent']);
     }
   }
-
   preventBackButton() {
     history.pushState(null, '', location.href);
     this.locationStrategy.onPopState(() => {

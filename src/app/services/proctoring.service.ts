@@ -11,23 +11,19 @@ export class ProctoringService {
   private hubConnection!: signalR.HubConnection;
   private audioRecorder: MediaRecorder | null = null;
   private streamInterval: any;
-  private verifyInterval: any; // تايمر التوثيق الدوري
-
-  // private readonly VOICE_API_URL = 'https://gannaeslam38-ofoq-ai-engine.hf.space/analyze_audio';
+  private verifyInterval: any;
 
   constructor(private examState: ExamStateService) {}
 
   async startProctoring(videoElement: HTMLVideoElement, sessionId: string | null) {
     try {
+      // Enforce HD Resolution for better AI accuracy
       this.mediaStream = await navigator.mediaDevices.getUserMedia({
-// استبدلي:
-// video: { width: 640 },
-
-// بده:
-video: {
-  width: { min: 1280, ideal: 1920 },
-  height: { min: 720, ideal: 1080 }
-},        audio: {
+        video: {
+          width: { min: 1280, ideal: 1920 },
+          height: { min: 720, ideal: 1080 }
+        },
+        audio: {
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: false,
@@ -45,84 +41,77 @@ video: {
       this.startAudioMonitoring();
       this.startSignalRConnection();
 
-      // 1. تشغيل التوثيق الدوري كل 5 دقايق
-      if(sessionId) this.startPeriodicIdentityVerify(videoElement, sessionId);
+      // Start periodic identity verification every 5 minutes
+      if (sessionId) this.startPeriodicIdentityVerify(videoElement, sessionId);
 
     } catch (err) {
       this.examState.logOutput('\nError: Camera and Microphone access required.');
     }
   }
 
- private connectVisionWebSocket(sessionId: string | null, videoElement: HTMLVideoElement) {
+  private connectVisionWebSocket(sessionId: string | null, videoElement: HTMLVideoElement) {
     if (!sessionId) return;
 
-const wsUrl = `wss://jerold-unmimetic-jess.ngrok-free.dev/ws/exam/${sessionId}`;
-   console.log("DEBUG: Connecting to:", wsUrl); // هل ده بيطبع؟
-       this.cvWebSocket = new WebSocket(wsUrl);
+    const wsUrl = `wss://jerold-unmimetic-jess.ngrok-free.dev/ws/exam/${sessionId}`;
+    this.cvWebSocket = new WebSocket(wsUrl);
 
     this.cvWebSocket.onopen = () => {
       console.log('✅ Connected to Vision AI WebSocket');
       this.startVideoStreaming(videoElement);
     };
 
-    // 👈 ضيفي السطر ده هنا بالظبط عشان نشوف الداتا اللي جاية من الـ AI
-   this.cvWebSocket.onmessage = (event) => {
-  try {
-    const response = JSON.parse(event.data);
+    // Listen for real-time AI computer vision data
+    this.cvWebSocket.onmessage = (event) => {
+      try {
+        const response = JSON.parse(event.data);
 
-    // 1. لو السيرفر بيعمل Skip للفريم
-    if (response.status === 'skipped') return;
+        // Skip dropped frames
+        if (response.status === 'skipped') return;
 
-    // 2. منطق الـ Alarm بناءً على الـ Severity
-    switch (response.severity) {
-      case 'WARNING':
-        this.examState.processAIVerdict('WARNING', response.action || 'Warning!', response.alarm_count);
-        break;
-      case 'CHEATING_ALARM':
-        this.examState.processAIVerdict('CHEATING_ALARM', response.action || 'Cheating detected!', response.alarm_count);
-        break;
-      case 'EXAM_CLOSED':
-        this.examState.endExam('Forced by AI', '');
-        alert("Exam has been terminated!");
-        break;
-      default:
-        // كل شيء تمام (null)
-        break;
-    }
-  } catch (e) {
-    console.error("Error parsing AI response:", e);
+        // Route AI verdicts based on severity
+        switch (response.severity) {
+          case 'WARNING':
+            // Distraction < 7 seconds
+            this.examState.processAIVerdict('WARNING', response.action || 'Focus Warning!');
+            break;
+          case 'CHEATING_ALARM':
+            // Distraction > 7 seconds or explicit violation
+            this.examState.processAIVerdict('CHEATING_ALARM', response.action || 'Cheating detected!');
+            break;
+          case 'EXAM_CLOSED':
+            // Immediate forced termination by AI
+            this.examState.endExam('Forced by AI Vision');
+            break;
+        }
+      } catch (e) {
+        console.error("Error parsing AI response:", e);
+      }
+    };
   }
-};
-  }
 
- private startVideoStreaming(videoElement: HTMLVideoElement) {
+  private startVideoStreaming(videoElement: HTMLVideoElement) {
     this.streamInterval = setInterval(() => {
       if (this.examState.isExamFinished) return;
 
       if (videoElement && videoElement.readyState === 4 && this.cvWebSocket?.readyState === WebSocket.OPEN) {
         const canvas = document.createElement('canvas');
 
-        // 🚀 تصغير أبعاد الصورة للنص لتسريع الإرسال وتقليل الحجم
+        // Downscale image to 50% to optimize bandwidth
         canvas.width = videoElement.videoWidth / 2;
         canvas.height = videoElement.videoHeight / 2;
 
         canvas.getContext('2d')?.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
 
-        // 🚀 تقليل الـ Quality لـ 0.3 (كافية جداً للـ AI)
+        // Compress JPEG to 0.3 quality (sufficient for FaceNet/YOLO)
         canvas.toBlob((blob) => {
           if (blob && this.cvWebSocket?.readyState === WebSocket.OPEN) {
-
-            // 💡 الإثبات القاطع: طباعة الوقت الحالي وحجم الفريم
-            const timeNow = new Date().toLocaleTimeString('en-US', { hour12: false, fractionalSecondDigits: 3 });
-            console.log(`[${timeNow}] 📤 Sending Frame... Size: ${(blob.size / 1024).toFixed(2)} KB`);
-
             this.cvWebSocket.send(blob);
           }
         }, 'image/jpeg', 0.3);
       }
-    }, 1000);
+    }, 1000); // 1 frame per second
   }
-  // 3. دالة الـ Verify Periodic (كل 5 دقايق)
+
   private startPeriodicIdentityVerify(videoElement: HTMLVideoElement, sessionId: string) {
     this.verifyInterval = setInterval(() => {
       if (this.examState.isExamFinished) return;
@@ -132,8 +121,8 @@ const wsUrl = `wss://jerold-unmimetic-jess.ngrok-free.dev/ws/exam/${sessionId}`;
       canvas.height = videoElement.videoHeight;
       canvas.getContext('2d')?.drawImage(videoElement, 0, 0);
 
-canvas.toBlob((blob: Blob | null) => {
-          if (blob) {
+      canvas.toBlob((blob: Blob | null) => {
+        if (blob) {
           const token = localStorage.getItem('token');
           if (!token) return;
 
@@ -147,16 +136,16 @@ canvas.toBlob((blob: Blob | null) => {
           })
           .then(res => res.json())
           .then(data => {
-            // لو الباك إند رجع إن ده شخص تاني
+            // Trigger ALARM if the face does not match the original verified user
             if (data && data.match === false) {
-               this.examState.processAIVerdict('CHEATING_ALARM', "IDENTITY MISMATCH: Unrecognized person!", this.examState.violationCount + 1);
+               this.examState.processAIVerdict('CHEATING_ALARM', "IDENTITY MISMATCH: Unrecognized person!");
             }
           })
           .catch(err => console.error("Periodic verify failed", err));
         }
       }, 'image/jpeg', 0.9);
 
-    }, 5 * 60 * 1000); // 5 دقائق
+    }, 5 * 60 * 1000); // Execute every 5 minutes
   }
 
   private startAudioMonitoring() {
@@ -172,7 +161,6 @@ canvas.toBlob((blob: Blob | null) => {
     this.audioRecorder.onstop = () => {
       if (!this.examState.isExamFinished && chunks.length > 0) {
         const audioBlob = new Blob(chunks, { type: 'audio/webm' });
-
         this.sendAudioToBackend(audioBlob);
       }
       if (!this.examState.isExamFinished) {
@@ -181,6 +169,7 @@ canvas.toBlob((blob: Blob | null) => {
     };
 
     this.audioRecorder.start();
+    // Record in 10-second intervals
     setTimeout(() => {
       if (this.audioRecorder && this.audioRecorder.state === 'recording') {
         this.audioRecorder.stop();
@@ -188,28 +177,23 @@ canvas.toBlob((blob: Blob | null) => {
     }, 10000);
   }
 
- private async sendAudioToBackend(audioBlob: Blob) {
+  private async sendAudioToBackend(audioBlob: Blob) {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000); // ⏱️ إحباط الطلب بعد 5 ثواني
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5-second timeout to free bandwidth
 
     const token = localStorage.getItem('token');
-    // 👇 زي ما الباك إند طلب، هنجيب الـ ExamSessionId الأساسي
     const examSessionId = localStorage.getItem('currentSessionId');
 
     if (!token || !examSessionId) return;
 
-    // 👇 مسار الـ API الجديد بتاع الباك إند
     const url = `https://ofoqai.runasp.net/api/v1/exam/voice-analysis/${examSessionId}`;
-
     const formData = new FormData();
-    formData.append('file', audioBlob, 'exam_audio.webm'); // تأكدي إن الباك إند مستني الملف باسم 'file'
+    formData.append('file', audioBlob, 'exam_audio.webm');
 
     try {
       const response = await fetch(url, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}` // 👈 إضافة التوكن لأن ده API داخلي
-        },
+        headers: { 'Authorization': `Bearer ${token}` },
         body: formData,
         signal: controller.signal
       });
@@ -219,14 +203,12 @@ canvas.toBlob((blob: Blob | null) => {
 
       const data = await response.json();
 
-      // 👇 الشرط ده محتاج يتظبط حسب شكل ريسبونس الباك إند لما بيكتشف غش
+      // Trigger ALARM if voice model detects whispering, secondary voices, etc.
       if (data && (data.is_cheating === true || data.label === 1 || data.status !== 'Normal')) {
-        this.examState.processAIVerdict('CHEATING_ALARM', `VOICE ALARM: Suspicious audio detected!`, this.examState.violationCount + 1);
+        this.examState.processAIVerdict('CHEATING_ALARM', `VOICE ALARM: Suspicious audio detected!`);
       }
     } catch (error: any) {
-      if (error.name === 'AbortError') {
-        console.warn('⚠️ Audio request timed out, skipping to free bandwidth.');
-      } else {
+      if (error.name !== 'AbortError') {
         console.error('❌ Audio API Error:', error);
       }
     }
@@ -235,23 +217,23 @@ canvas.toBlob((blob: Blob | null) => {
   private startSignalRConnection() {
     const token = localStorage.getItem('token');
 
-  this.hubConnection = new signalR.HubConnectionBuilder()
-      // 🔴 التعديل هنا: غيرنا اسم المسار لـ /ws/exam
+    this.hubConnection = new signalR.HubConnectionBuilder()
       .withUrl('https://ofoqai.runasp.net/ws/exam', {
         accessTokenFactory: () => token || ''
       })
       .withAutomaticReconnect()
       .build();
 
-    // 4. استقبال أوامر الباك إند
+    // Listen for direct commands from the backend
     this.hubConnection.on('ReceiveAlarm', (severity: string, message: string, alarmCount: number) => {
       if (!this.examState.isExamFinished) {
-this.examState.processAIVerdict('CHEATING_ALARM', message, alarmCount);      }
+        this.examState.processAIVerdict('CHEATING_ALARM', message);
+      }
     });
 
     this.hubConnection.on('ForceSubmit', (reason: string) => {
        console.log("Received ForceSubmit from Server:", reason);
-       this.examState.endExam(`Forced by Server: ${reason}`, '');
+       this.examState.endExam(`Forced by Server: ${reason}`);
     });
 
     this.hubConnection.start()
