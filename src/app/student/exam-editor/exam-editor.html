@@ -105,15 +105,21 @@
   </main>
 
   <!-- Proctored Vision Widget Framework -->
-  <div class="camera-widget" [class.alarm-glow]="isRedAlarm">
-    <div class="video-container">
-      <div class="ai-overlay">
-        <div class="ai-badge" [class.active]="true">
-          <span class="dot"></span> REALTIME PROCTOR CORE RUNNING
-        </div>
+  <!-- 🎥 Proctored Vision Widget Framework (تمت إضافة تاغ الفيديو والربط بالـ ID) -->
+<div class="camera-widget" [class.alarm-glow]="isRedAlarm" style="position: fixed; bottom: 20px; right: 20px; width: 180px; height: 135px; border-radius: 12px; overflow: hidden; box-shadow: 0 8px 24px rgba(0,0,0,0.3); z-index: 1000; border: 2px solid #334155;">
+  <div class="video-container" style="position: relative; width: 100%; height: 100%; background: #0f172a;">
+
+    <!-- 👇 تاغ الفيديو السحري اللي كان ناقص ومربوط بالـ ViewChild -->
+    <video #proctoringVideo autoplay playsinline muted style="width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1);"></video>
+
+    <div class="ai-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: 6px;">
+      <div class="ai-badge" [class.active]="true" style="background: rgba(15, 23, 42, 0.7); color: #4ade80; font-size: 0.65rem; font-weight: bold; padding: 4px 8px; border-radius: 4px; display: flex; align-items: center; gap: 4px; border: 1px solid rgba(74, 222, 128, 0.2);">
+        <span class="dot" style="width: 6px; height: 6px; background: #4ade80; border-radius: 50%; display: inline-block; animate: pulse 1.5s infinite;"></span>
+        LIVE
       </div>
     </div>
   </div>
+</div>
 
   <!-- Workspace Control Trigger Matrix -->
   <div class="editor-actions">
