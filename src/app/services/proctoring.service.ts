@@ -179,7 +179,7 @@ export class ProctoringService {
 
   private async sendAudioToBackend(audioBlob: Blob) {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5-second timeout to free bandwidth
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
 
     const token = localStorage.getItem('token');
     const examSessionId = localStorage.getItem('currentSessionId');
@@ -188,7 +188,9 @@ export class ProctoringService {
 
     const url = `https://ofoqai.runasp.net/api/v1/exam/voice-analysis/${examSessionId}`;
     const formData = new FormData();
-    formData.append('file', audioBlob, 'exam_audio.webm');
+
+    // ✅ التعديل السحري: غيرنا 'file' إلى 'audio' ليتوافق مع الـ Validation بتاع الباك إند
+    formData.append('audio', audioBlob, 'exam_audio.webm');
 
     try {
       const response = await fetch(url, {
@@ -203,7 +205,6 @@ export class ProctoringService {
 
       const data = await response.json();
 
-      // Trigger ALARM if voice model detects whispering, secondary voices, etc.
       if (data && (data.is_cheating === true || data.label === 1 || data.status !== 'Normal')) {
         this.examState.processAIVerdict('CHEATING_ALARM', `VOICE ALARM: Suspicious audio detected!`);
       }
