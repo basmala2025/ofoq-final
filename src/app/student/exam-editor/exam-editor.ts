@@ -82,14 +82,20 @@ export class ExamEditorComponent implements OnInit, AfterViewInit, OnDestroy {
     this.loadExamProblemDetails();
   }
 
-  ngAfterViewInit() {
-    setTimeout(() => {
+ ngAfterViewInit() {
+    // We poll check for the video element to safely bypass any structural *ngIf delay
+    const checkVideoInterval = setInterval(() => {
       if (this.proctoringVideo && this.proctoringVideo.nativeElement) {
-        this.proctoringService.startProctoring(this.proctoringVideo.nativeElement, this.proctorSessionId);
-      }
-    }, 500);
-  }
+        clearInterval(checkVideoInterval); // Stop polling once found
 
+        const videoEl = this.proctoringVideo.nativeElement;
+        this.proctoringService.startProctoring(videoEl, this.proctorSessionId);
+
+        console.log('👀 [OFOQ] AI Proctoring Core successfully attached to Video Element! ID:', this.proctorSessionId);
+        this.cdr.detectChanges(); // Enforce change detection safely
+      }
+    }, 300); // Check every 300ms until the DOM renders the tag
+  }
   loadExamProblemDetails() {
     this.examService.getExamDetails(this.examSessionId).subscribe({
       next: (res) => {
