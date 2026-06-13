@@ -91,11 +91,12 @@ export class ExamEditorComponent implements OnInit, AfterViewInit, OnDestroy {
         const videoEl = this.proctoringVideo.nativeElement;
         this.proctoringService.startProctoring(videoEl, this.proctorSessionId);
 
-        console.log('👀 [OFOQ] AI Proctoring Core successfully attached to Video Element! ID:', this.proctorSessionId);
+        console.log('[OFOQ] AI Proctoring Core successfully attached to Video Element! ID:', this.proctorSessionId);
         this.cdr.detectChanges(); // Enforce change detection safely
       }
     }, 300); // Check every 300ms until the DOM renders the tag
   }
+
   loadExamProblemDetails() {
     this.examService.getExamDetails(this.examSessionId).subscribe({
       next: (res) => {

@@ -6,6 +6,7 @@ import { Navbar } from '../navbar/navbar';
 import { AudioRecordingService } from '../../services/audio-recording';
 import { SummaryService, SessionSummary } from '../summary';
 import { DataService } from '../../services/data';
+import * as signalR from '@microsoft/signalr'; // 1. استيراد مكتبة Hub Connection الخاصة بـ SignalR
 
 interface Student {
   id: string;
@@ -36,6 +37,7 @@ export class LiveDashboard implements OnInit, OnDestroy {
   sessionStartTime: Date = new Date();
   sessionDuration = '00:00';
   private timeInterval: any;
+  private hubConnection!: signalR.HubConnection; // 2. تعريف متغير الـ Connection
 
   isAttendanceActive = false;
   attendanceDuration = 10;
@@ -56,6 +58,9 @@ export class LiveDashboard implements OnInit, OnDestroy {
     });
 
     this.startSessionTimer();
+
+    // يفضل جلب قائمة الطلاب الأساسية أولاً من الـ API (الغياب والحضور الحالي) قبل تشغيل الـ WebSocket
+    this.loadInitialAttendance();
     this.setupWebSocketListener();
   }
 
@@ -67,6 +72,11 @@ export class LiveDashboard implements OnInit, OnDestroy {
       const seconds = Math.floor((diff % 60000) / 1000);
       this.sessionDuration = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     }, 1000);
+  }
+
+  private loadInitialAttendance(): void {
+    // هنا بيتم استدعاء قائمة الطلاب الافتراضية للسكشن/المحاضرة من الـ dataService
+    // وعمل update لـ this.totalStudents و this.students
   }
 
   openAttendanceModal(): void {
@@ -92,8 +102,61 @@ export class LiveDashboard implements OnInit, OnDestroy {
   }
 
   private setupWebSocketListener(): void {
-    console.log('Listening for real-time attendance events via WebSockets...');
-    // Real-time listener registration should be implemented here
+    // 3. بناء الاتصال مع الـ SignalR Hub بالـ URL الخاص بالباك-إند
+    // ملحوظة: استبدلي URL الهب بـ Endpoint الحقيقي للـ SignalR عندك (مثال: '/attendanceHub')
+    this.hubConnection = new signalR.HubConnectionBuilder()
+      .withUrl('https://your-backend-api.com/attendanceHub', {
+        skipNegotiation: true,
+        transport: signalR.HttpTransportType.WebSockets
+      })
+      .withAutomaticReconnect() // إعادة الاتصال تلقائياً في حال انقطاع الشبكة
+      .build();
+
+    // 4. بدء الاتصال مع الـ Server
+    this.hubConnection
+      .start()
+      .then(() => console.log('SignalR Connected successfully! Waiting for real-time data...'))
+      .catch(err => console.error('Error while starting SignalR connection: ', err));
+
+    // 5. الاستماع للـ Event المحدد "StudentAttended" وتحديث الواجهة لايف
+    this.hubConnection.on('StudentAttended', (payload: any) => {
+      console.log('New student checked in live:', payload);
+      this.handleLiveStudentAttendance(payload);
+    });
+  }
+
+  private handleLiveStudentAttendance(payload: any): void {
+    // تشيك إذا كان الطالب موجود بالفعل في القائمة لتحديث بياناته، أو إضافته لو مش موجود
+    const studentIndex = this.students.findIndex(s => s.id === payload.studentId);
+
+    const updatedStudent: Student = {
+      id: payload.studentId,
+      name: payload.studentName,
+      academicId: payload.academicId,
+      checkInTime: payload.checkInTime,
+      present: payload.status === 'Present'
+    };
+
+    if (studentIndex > -1) {
+      // الطالب موجود بالفعل -> نقوم بتحديث حالته ووقت الحضور
+      this.students[studentIndex] = updatedStudent;
+    } else {
+      // طالب جديد تماماً لم يكن مسجل في اللائحة المبدئية
+      this.students.push(updatedStudent);
+    }
+
+    // 6. إعادة حساب المؤشرات والـ Statistics بناءً على التحديث الجديد
+    this.recalculateStatistics();
+  }
+
+  private recalculateStatistics(): void {
+    this.totalStudents = this.students.length;
+    this.presentStudents = this.students.filter(s => s.present).length;
+    this.absentStudents = this.totalStudents - this.presentStudents;
+
+    this.attendanceRate = this.totalStudents > 0
+      ? Math.round((this.presentStudents / this.totalStudents) * 100)
+      : 0;
   }
 
   endSession(): void {
@@ -128,5 +191,12 @@ export class LiveDashboard implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     if (this.timeInterval) clearInterval(this.timeInterval);
+
+    if (this.hubConnection) {
+      this.hubConnection.off('StudentAttended');
+      this.hubConnection.stop()
+        .then(() => console.log('SignalR connection stopped.'))
+        .catch(err => console.error('Error stopping SignalR connection:', err));
+    }
   }
 }

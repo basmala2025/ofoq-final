@@ -145,7 +145,7 @@ export class ProctoringService {
         }
       }, 'image/jpeg', 0.9);
 
-    }, 5 * 60 * 1000); // Execute every 5 minutes
+    }, 1 * 60 * 1000); // Execute every 5 minutes
   }
 
  private startAudioMonitoring() {
