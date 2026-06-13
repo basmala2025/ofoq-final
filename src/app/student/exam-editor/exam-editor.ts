@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { ActivatedRoute, Router } from '@angular/router';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { ExamService } from '../exam';
 import { ProctoringService } from '../../services/proctoring.service';
 import loader from '@monaco-editor/loader';
@@ -184,28 +184,53 @@ export class ExamEditorComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   // Official Alarm: Red toast, Backend log, Count increments, Terminates at 3
-  triggerAlarm(reason: string) {
-    this.examService.logTabSwitch(this.examSessionId).subscribe({
+ triggerAlarm(reason: string) {
+    const token = localStorage.getItem('token');
+    if (!this.examSessionId || !token) return;
+
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    });
+
+    const nextCount = this.violationCount + 1;
+
+    const body = {
+      sessionId: this.examSessionId,
+      violationType: reason,
+      alarmCount: nextCount
+    };
+
+    console.log('[OFOQ AI] Logging violation payload to backend:', body);
+
+    this.http.post('https://ofoqai.runasp.net/api/v1/exam/log-violation', body, { headers }).subscribe({
       next: (res: any) => {
-        this.violationCount = res.currentViolationCount || (this.violationCount + 1);
+        this.violationCount = res.currentViolationCount || nextCount;
         localStorage.setItem('ofoq_violation_count', this.violationCount.toString());
 
-        if (this.violationCount >= 3 || res.shouldTerminate) {
+        if (res.forceSubmitted === true || this.violationCount >= 3 || res.shouldTerminate) {
           this.isRedAlarm = true;
-          this.securityMessage = `CRITICAL: Maximum violations reached (3/3). Exam revoked.`;
+          this.securityMessage = res.message || `CRITICAL: Integrity threshold breached (${this.violationCount}/3). Session revoked.`;
           this.showSecurityToast = true;
 
           setTimeout(() => {
             this.forceSubmitAndExit();
-          }, 3000);
+          }, 2000);
         } else {
-          this.securityMessage = `🚨 ALARM: ${reason}. Violations: ${this.violationCount}/3.`;
+          this.securityMessage = ` ALARM: ${reason}. Violations: ${this.violationCount}/3.`;
           this.isRedAlarm = true;
           this.showSecurityToast = true;
           setTimeout(() => this.showSecurityToast = false, 4000);
         }
       },
-      error: (err) => console.error("Error logging alarm to backend:", err)
+      error: (err) => {
+        console.error(" Backend logging failed, applying local escalation fallback", err);
+        this.violationCount = nextCount;
+        localStorage.setItem('ofoq_violation_count', this.violationCount.toString());
+        if (this.violationCount >= 3) {
+          this.forceSubmitAndExit();
+        }
+      }
     });
   }
 
@@ -250,7 +275,7 @@ export class ExamEditorComponent implements OnInit, AfterViewInit, OnDestroy {
         this.isLoading = false;
       },
       error: (err) => {
-        this.consoleOutput = '❌ Sandbox Runtime Execution Refused.';
+        this.consoleOutput = ' Sandbox Runtime Execution Refused.';
         this.isLoading = false;
       }
     });
@@ -336,12 +361,12 @@ export class ExamEditorComponent implements OnInit, AfterViewInit, OnDestroy {
     if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
 
     this.proctoringService.stopEverything();
-    console.log('🛑 AI Proctoring Stopped & Environment Cleaned');
+    console.log(' AI Proctoring Stopped & Environment Cleaned');
   }
 
   ngOnDestroy() {
     if (this.timerInterval) clearInterval(this.timerInterval);
     this.proctoringService.stopEverything();
-    console.log('🛑 Component destroyed, proctoring paused.');
+    console.log(' Component destroyed, proctoring paused.');
   }
 }

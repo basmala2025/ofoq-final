@@ -31,8 +31,7 @@ export class ExamStateService {
     this.logOutput('[System]: Joined active exam session successfully.');
   }
 
-  // Invoked by ProctoringService to forward AI verdicts to the Editor
-  processAIVerdict(type: 'WARNING' | 'CHEATING_ALARM', msg: string) {
+ processAIVerdict(type: 'WARNING' | 'CHEATING_ALARM', msg: string) {
     this.securityEvents$.next({ type, msg });
   }
 

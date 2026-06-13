@@ -101,51 +101,13 @@ export class TaApiService {
     return this.http.post<PublishExamResponse>(`${this.apiUrl}/courses/${courseId}/exams`, payload);
   }
 
-  // 🎯 تم تحديث الـ Key الجديد هنا تلقائياً
   private geminiApiKey = 'AQ.Ab8RN6LjwvkZMJX_OKs1x-Nf1-bTA-skORdX0uKSP86dfH5t1w';
 
  generateExamWithAI(prompt: string): Observable<any> {
-  // 🎯 التعديل هنا: الانتقال لموديل gemini-2.5-flash على الـ v1 Endpoint
-  const targetUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${this.geminiApiKey}`;
-  const url = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
+  const serverIp = '18.224.50.12';
+  const url = `http://${serverIp}:3000/api/exams/generate-ai`;
 
-  const combinedPrompt = `
-    You are an expert Computer Science Teaching Assistant (TA).
-    Your task is to generate a complete programming exam question based on the user request.
-
-    User Request: "${prompt}"
-
-    CRITICAL: You must respond ONLY with a raw, valid JSON object matching the exact structural layout below.
-    Do NOT wrap the output in markdown code blocks (like \`\`\`json ... \`\`\`), do NOT add any conversational text before or after the JSON.
-
-    Required JSON Structure:
-    {
-      "title": "Clear concise exam title string",
-      "description": "Detailed problem description string with instructions, constraints explanation, input/output formats, and clear examples",
-      "referenceSolution": "Full, working, and highly optimized C++ or Python code solution snippet string depending on the request",
-      "constraints": {
-        "timeLimitSec": 2,
-        "memoryLimitMb": 256,
-        "allowedLanguage": "C++",
-        "maxAttempts": 3
-      },
-      "testCases": [
-        { "input": "Standard input string for test 1", "expectedOutput": "Exact expected output string for test 1", "isHidden": false },
-        { "input": "Standard input string for test 2", "expectedOutput": "Exact expected output string for test 2", "isHidden": true },
-        { "input": "Standard input string for test 3", "expectedOutput": "Exact expected output string for test 3", "isHidden": true }
-      ]
-    }
-  `;
-
-  const payload = {
-    contents: [
-      {
-        parts: [
-          { text: combinedPrompt }
-        ]
-      }
-    ]
-  };
+  const payload = { prompt: prompt };
 
   return this.http.post<any>(url, payload, {
     context: new HttpContext().set(TaApiService.BYPASS_AUTH, true)

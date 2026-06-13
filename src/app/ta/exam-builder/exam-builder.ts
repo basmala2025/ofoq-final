@@ -265,7 +265,6 @@ examType = signal<string>('PRACTICAL');
         // Parsing the string into a valid JavaScript Object
         const response = JSON.parse(jsonString);
 
-        // 🎯 توزيع الداتا المفرومة على الـ Signals فوراً
         if (response.title) this.examTitle.set(response.title);
         if (response.description) this.examDescription.set(response.description);
         if (response.referenceSolution) this.referenceSolution.set(response.referenceSolution);
@@ -296,12 +295,12 @@ examType = signal<string>('PRACTICAL');
 
         this.isAiGenerating.set(false);
         this.aiPrompt.set('');
-        alert('✨ Exam blueprint generated directly from Gemini & loaded successfully!');
+        alert('Exam blueprint generated directly from Gemini & loaded successfully!');
 
       } catch (parseError) {
         console.error('Failed to parse Gemini response text into JSON:', parseError);
         this.isAiGenerating.set(false);
-        alert('❌ Error processing the AI response format.');
+        alert('Error processing the AI response format.');
       }
     },
     error: (err) => {
