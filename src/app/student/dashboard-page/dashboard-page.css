@@ -261,9 +261,8 @@ html, body {
   transition: all 0.2s ease;
 }
 
-/* زر إطلاق الامتحان الناري المشرق */
 .btn-primary.btn-live-trigger {
-  background: linear-gradient(135deg, #ef4444 0%, #c084fc 100%) !important;
+  background: linear-gradient(135deg, #f47545 0%, #5f369e 100%) !important;
   color: var(--text-pure) !important;
   box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
 }
@@ -273,9 +272,8 @@ html, body {
   box-shadow: 0 8px 20px rgba(239, 68, 68, 0.45);
 }
 
-/* زر التسجيل في الكورسات المتاح استكشافها */
 .btn-enroll {
-  background: linear-gradient(135deg, #6366f1 0%, #a78bfa 100%) !important;
+  background: linear-gradient(135deg, #f47545 0%, #5f369e 100%) !important;
   color: var(--text-pure) !important;
 }
 

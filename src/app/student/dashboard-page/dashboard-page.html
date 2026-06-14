@@ -44,7 +44,7 @@
                     </span>
                     <span class="tag tag-time"><i class="far fa-clock"></i> {{ course.exam.durationMinutes }} min</span>
                   } @else {
-                    <span class="tag tag-idle">✨ Active Course</span>
+                    <span class="tag tag-idle">Active Course</span>
                   }
                 </div>
 
@@ -54,7 +54,7 @@
                 @if(course.exam) {
                   <div class="live-exam-alert-box">
                     <p>
-                      ⚠️ <strong>امتحان فعال الآن:</strong> {{ course.exam.title }}
+                      <strong>Active Exam Now:</strong> {{ course.exam.title }}
                     </p>
                   </div>
                 }
