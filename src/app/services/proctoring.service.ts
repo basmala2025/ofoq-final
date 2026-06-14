@@ -17,7 +17,7 @@ export class ProctoringService {
 
   async startProctoring(videoElement: HTMLVideoElement, sessionId: string | null) {
     try {
-      // Enforce HD Resolution for better AI accuracy
+      // Enforce HD Resolution for optimized AI feature extraction accuracy
       this.mediaStream = await navigator.mediaDevices.getUserMedia({
         video: {
           width: { min: 1280, ideal: 1920 },
@@ -41,7 +41,7 @@ export class ProctoringService {
       this.startAudioMonitoring();
       this.startSignalRConnection();
 
-      // Start periodic identity verification every 5 minutes
+      // Fire periodic identity verification checks if session ID exists
       if (sessionId) this.startPeriodicIdentityVerify(videoElement, sessionId);
 
     } catch (err) {
@@ -60,31 +60,30 @@ export class ProctoringService {
       this.startVideoStreaming(videoElement);
     };
 
-    // Listen for real-time AI computer vision data
     this.cvWebSocket.onmessage = (event) => {
       try {
         const response = JSON.parse(event.data);
 
-        // Skip dropped frames
+        // Skip processing when server drops frames intentionally
         if (response.status === 'skipped') return;
 
-        // Route AI verdicts based on severity
+        // Delegate AI real-time verdicts directly to the state bridge
         switch (response.severity) {
           case 'WARNING':
-            // Distraction < 7 seconds
+            // Distraction duration calculated under 7 seconds
             this.examState.processAIVerdict('WARNING', response.action || 'Focus Warning!');
             break;
           case 'CHEATING_ALARM':
-            // Distraction > 7 seconds or explicit violation
+            // Gaze deviation exceeded 7 seconds threshold
             this.examState.processAIVerdict('CHEATING_ALARM', response.action || 'Cheating detected!');
             break;
           case 'EXAM_CLOSED':
-            // Immediate forced termination by AI
+            // High-risk anomaly detected forcing immediate shutdown
             this.examState.endExam('Forced by AI Vision');
             break;
         }
       } catch (e) {
-        console.error("Error parsing AI response:", e);
+        console.error("Error parsing AI Vision response:", e);
       }
     };
   }
@@ -96,20 +95,20 @@ export class ProctoringService {
       if (videoElement && videoElement.readyState === 4 && this.cvWebSocket?.readyState === WebSocket.OPEN) {
         const canvas = document.createElement('canvas');
 
-        // Downscale image to 50% to optimize bandwidth
+        // Scale down dimensions by 50% to optimize bandwidth consumption
         canvas.width = videoElement.videoWidth / 2;
         canvas.height = videoElement.videoHeight / 2;
 
         canvas.getContext('2d')?.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
 
-        // Compress JPEG to 0.3 quality (sufficient for FaceNet/YOLO)
+        // Compress frame payload to 0.3 quality standard for fast transport
         canvas.toBlob((blob) => {
           if (blob && this.cvWebSocket?.readyState === WebSocket.OPEN) {
             this.cvWebSocket.send(blob);
           }
         }, 'image/jpeg', 0.3);
       }
-    }, 1000); // 1 frame per second
+    }, 1000); // Steady 1 FPS streaming rate
   }
 
   private startPeriodicIdentityVerify(videoElement: HTMLVideoElement, sessionId: string) {
@@ -121,37 +120,47 @@ export class ProctoringService {
       canvas.height = videoElement.videoHeight;
       canvas.getContext('2d')?.drawImage(videoElement, 0, 0);
 
-      canvas.toBlob((blob: Blob | null) => {
-        if (blob) {
-          const token = localStorage.getItem('token');
-          if (!token) return;
+      // Convert captured matrix directly to Base64 to mirror original verification pipelines
+      const base64Image = canvas.toDataURL('image/jpeg', 0.9);
 
-          const formData = new FormData();
-          formData.append('frame', blob, 'verify_frame.jpg');
+      const token = localStorage.getItem('token');
+      if (!token) return;
 
-          fetch(`https://ofoqai.runasp.net/api/v1/exam/verify-periodic/${sessionId}`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` },
-            body: formData
-          })
-          .then(res => res.json())
-          .then(data => {
-            // Trigger ALARM if the face does not match the original verified user
-            if (data && data.match === false) {
-               this.examState.processAIVerdict('CHEATING_ALARM', "IDENTITY MISMATCH: Unrecognized person!");
-            }
-          })
-          .catch(err => console.error("Periodic verify failed", err));
+      const payload = {
+        image: base64Image
+      };
+
+      fetch(`https://ofoqai.runasp.net/api/v1/exam/verify-periodic/${sessionId}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      })
+      .then(res => res.json())
+      .then(data => {
+        console.log('📸 [OFOQ] Periodic Face Verification Context Loaded:', data);
+        // Intercept mismatches instantly to trigger severe red alert logs
+        if (data && (data.match === false || data.isSuccess === false || data.status === 'Failed')) {
+          this.examState.processAIVerdict('CHEATING_ALARM', "IDENTITY MISMATCH: Unrecognized face footprint sitting in front of code workspace!");
         }
-      }, 'image/jpeg', 0.9);
+      })
+      .catch(err => console.error("❌ Periodic validation pipe dropped frame payload:", err));
 
-    }, 1 * 60 * 1000); // Execute every 5 minutes
+    }, 5 * 60 * 1000); // Validation guard loops seamlessly every 5 minutes
   }
 
- private startAudioMonitoring() {
+  private startAudioMonitoring() {
     if (!this.mediaStream || this.examState.isExamFinished) return;
 
-    this.audioRecorder = new MediaRecorder(this.mediaStream);
+    const options = { mimeType: 'audio/webm;codecs=opus' };
+    try {
+      this.audioRecorder = new MediaRecorder(this.mediaStream, options);
+    } catch (e) {
+      this.audioRecorder = new MediaRecorder(this.mediaStream);
+    }
+
     const chunks: BlobPart[] = [];
 
     this.audioRecorder.ondataavailable = (event) => {
@@ -160,59 +169,63 @@ export class ProctoringService {
 
     this.audioRecorder.onstop = () => {
       if (!this.examState.isExamFinished && chunks.length > 0) {
-        const audioBlob = new Blob(chunks, { type: 'audio/webm' });
+        const audioBlob = new Blob(chunks, { type: 'audio/wav' });
         this.sendAudioToBackend(audioBlob);
       }
+
+      // Allow a 25-second cool-down window to safely clear the AI model's computation queues
       if (!this.examState.isExamFinished) {
-        setTimeout(() => this.startAudioMonitoring(), 500);
+        setTimeout(() => this.startAudioMonitoring(), 25000);
       }
     };
 
     this.audioRecorder.start();
 
-    // ✅ تعديل: خليناها 5 ثواني عشان حجم الملف يبقى خفيف جداً وميحصلش Delay في الـ Network
+    // Record comprehensive 20-second blocks to accumulate substantial audio data for inference
     setTimeout(() => {
       if (this.audioRecorder && this.audioRecorder.state === 'recording') {
         this.audioRecorder.stop();
       }
-    }, 5000);
+    }, 20000);
   }
+
   private async sendAudioToBackend(audioBlob: Blob) {
-    // ✅ رفعنا الوقت لـ 15 ثانية عشان نمنع الـ (canceled) والـ Abort المبكر
+    // Upgraded watchdog timeout window to 90 seconds to tolerate deep transformer network delays
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000);
+    const timeoutId = setTimeout(() => controller.abort(), 90000);
 
-    const token = localStorage.getItem('token');
-    const examSessionId = localStorage.getItem('currentSessionId');
-
-    if (!token || !examSessionId) return;
-
-    const url = `https://ofoqai.runasp.net/api/v1/exam/voice-analysis/${examSessionId}`;
+    // Direct integration detour bypasses proxy bottlenecks straight to Hugging Face
+    const huggingFaceUrl = 'https://gannaeslam38-ofoq-ai-engine.hf.space/analyze_audio';
     const formData = new FormData();
-    formData.append('audio', audioBlob, 'exam_audio.webm');
+    formData.append('file', audioBlob, 'exam_audio.wav');
 
     try {
-      const response = await fetch(url, {
+      console.log('// Sending compressed binary audio slice directly to AI Engine space...');
+      const response = await fetch(huggingFaceUrl, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` },
         body: formData,
         signal: controller.signal
       });
       clearTimeout(timeoutId);
 
-      if (!response.ok) return;
+      if (!response.ok) {
+        console.warn(`⚠️ Hugging Face space returned standard down-status: ${response.status}`);
+        return;
+      }
 
       const data = await response.json();
-      console.log('🎤 [OFOQ] Audio Analysis Response Received:', data);
+      console.log('🎤 [OFOQ Smart API] Voice Analytics Signal Processed:', data);
 
-      if (data && (data.is_cheating === true || data.label === 1 || data.status !== 'Normal')) {
-        this.examState.processAIVerdict('CHEATING_ALARM', `VOICE ALARM: Suspicious audio detected!`);
+      // Evaluate raw responses matching custom pipeline output parameters
+      if (data && (data.is_cheating === true || data.label === 1 || data.status === 'Cheating' || data.status !== 'Normal')) {
+        console.log('🚨 Voice anomaly matched. Relaying cheating verdict payload up to state controller...');
+        this.examState.processAIVerdict('CHEATING_ALARM', `VOICE ALARM: Whispering or multi-voice background activity flagged!`);
       }
     } catch (error: any) {
       if (error.name === 'AbortError') {
-        console.warn('⚠️ Audio request timed out on server side, keeping stream alive.');
+        console.error('❌ Audio request timed out! Model took more than 90 seconds to return embedding states.');
       } else {
-        console.error('❌ Audio API Error:', error);
+        console.error('❌ Audio AI Engine Interface Error:', error);
       }
     }
   }
@@ -227,7 +240,6 @@ export class ProctoringService {
       .withAutomaticReconnect()
       .build();
 
-    // Listen for direct commands from the backend
     this.hubConnection.on('ReceiveAlarm', (severity: string, message: string, alarmCount: number) => {
       if (!this.examState.isExamFinished) {
         this.examState.processAIVerdict('CHEATING_ALARM', message);
@@ -235,7 +247,7 @@ export class ProctoringService {
     });
 
     this.hubConnection.on('ForceSubmit', (reason: string) => {
-       console.log("Received ForceSubmit from Server:", reason);
+       console.log("Received ForceSubmit execution token from live hub:", reason);
        this.examState.endExam(`Forced by Server: ${reason}`);
     });
 
