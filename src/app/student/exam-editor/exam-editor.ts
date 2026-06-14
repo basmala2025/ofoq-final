@@ -184,8 +184,7 @@ export class ExamEditorComponent implements OnInit, AfterViewInit, OnDestroy {
     setTimeout(() => this.showSecurityToast = false, 3000);
   }
 
-  // Official Alarm: Red toast, Backend log, Count increments, Terminates at 3
- triggerAlarm(reason: string) {
+triggerAlarm(reason: string) {
     const token = localStorage.getItem('token');
     if (!this.examSessionId || !token) return;
 
@@ -202,35 +201,36 @@ export class ExamEditorComponent implements OnInit, AfterViewInit, OnDestroy {
       alarmCount: nextCount
     };
 
-    console.log('[OFOQ AI] Logging violation payload to backend:', body);
-
     this.http.post('https://ofoqai.runasp.net/api/v1/exam/log-violation', body, { headers }).subscribe({
       next: (res: any) => {
+        // نحدث العداد بناءً على رد الباك إند الموثوق فقط
         this.violationCount = res.currentViolationCount || nextCount;
         localStorage.setItem('ofoq_violation_count', this.violationCount.toString());
 
         if (res.forceSubmitted === true || this.violationCount >= 3 || res.shouldTerminate) {
           this.isRedAlarm = true;
-          this.securityMessage = res.message || `CRITICAL: Integrity threshold breached (${this.violationCount}/3). Session revoked.`;
+          this.securityMessage = res.message || `CRITICAL: Violations threshold breached (3/3).`;
           this.showSecurityToast = true;
 
+          // هندي مهلة للطالب يشوف التوست قبل ما نعمل التوجيه عشان الـ Guard ميتفاجئش
           setTimeout(() => {
             this.forceSubmitAndExit();
           }, 2000);
         } else {
-          this.securityMessage = ` ALARM: ${reason}. Violations: ${this.violationCount}/3.`;
+          this.securityMessage = `🚨 ALARM: ${reason}. Violations: ${this.violationCount}/3.`;
           this.isRedAlarm = true;
           this.showSecurityToast = true;
+          this.cdr.detectChanges(); // نجبر الكاميرا والـ UI يفضلوا صاحيين
           setTimeout(() => this.showSecurityToast = false, 4000);
         }
       },
       error: (err) => {
-        console.error(" Backend logging failed, applying local escalation fallback", err);
-        this.violationCount = nextCount;
-        localStorage.setItem('ofoq_violation_count', this.violationCount.toString());
-        if (this.violationCount >= 3) {
-          this.forceSubmitAndExit();
-        }
+        console.error("❌ Backend log dropped. Keeping screen active.", err);
+        // 💥 التعديل السحري: شيلنا الـ forceSubmit الإجباري من الـ error
+        // عشان لو ريكويست الـ AI علق للحظة، الامتحان ميرميش الطالب بره ويقفل الكاميرا
+        this.securityMessage = `⚠️ Sync Warning: ${reason}`;
+        this.showSecurityToast = true;
+        setTimeout(() => this.showSecurityToast = false, 3000);
       }
     });
   }
