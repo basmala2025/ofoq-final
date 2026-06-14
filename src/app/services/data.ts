@@ -74,17 +74,28 @@ export class DataService {
    * Activates the BLE attendance tracking session for a specific lecture.
    * Triggers the backend to change state and notify mobile devices.
    */
+/**
+   * Activates the BLE attendance tracking session for a specific lecture.
+   * Updated to encapsulate fields inside the 'request' block as expected by the API.
+   */
   activateAttendance(lectureId: string, durationInMinutes: number): Observable<any> {
-    const url = `${this.baseUrl}/lectures/${lectureId}/activate-attendance`;
+    const url = `${this.baseUrl}/attendance`; // 👈 اتأكدي من الـ Endpoint دي بناءً على الـ Swagger اللي جربناه فوق
+
+    // تغليف البيانات داخل كائن "request" لتجنب الـ Validation Error
     const body = {
-      durationInMinutes: durationInMinutes
+      request: {
+        lecture_id: lectureId,
+        durationInMinutes: durationInMinutes,
+        device_id: "ESP32_1" // أو مرريها كـ Parameter للميثود لو متغيرة
+      }
     };
+
     const headers = new HttpHeaders({
       'Content-Type': 'application/json',
       'accept': '*/*'
     });
 
-    console.log(`Activating attendance for lecture: ${lectureId} with duration: ${durationInMinutes} mins`);
+    console.log(`Activating attendance via modern nested body for lecture: ${lectureId}`);
     return this.http.post<any>(url, body, { headers });
   }
 

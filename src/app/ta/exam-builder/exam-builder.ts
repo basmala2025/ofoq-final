@@ -251,19 +251,18 @@ examType = signal<string>('PRACTICAL');
     ));
   }
 
-  onGenerateWithAI(): void {
+ onGenerateWithAI(): void {
   if (!this.aiPrompt().trim()) return;
 
   this.isAiGenerating.set(true);
 
   this.taApiService.generateExamWithAI(this.aiPrompt().trim()).subscribe({
-    next: (geminiRawResponse) => {
+    next: (backendResponse) => {
       try {
-        // Extracting the inner JSON string from Gemini's response structure
-        const jsonString = geminiRawResponse.candidates[0].content.parts[0].text;
-
-        // Parsing the string into a valid JavaScript Object
-        const response = JSON.parse(jsonString);
+        // ✅ التعديل هنا: فحص لو الداتا راجعة كـ Object جاهز أو محتاجة فك (String)
+        const response = typeof backendResponse === 'string'
+          ? JSON.parse(backendResponse)
+          : backendResponse;
 
         if (response.title) this.examTitle.set(response.title);
         if (response.description) this.examDescription.set(response.description);
@@ -295,18 +294,18 @@ examType = signal<string>('PRACTICAL');
 
         this.isAiGenerating.set(false);
         this.aiPrompt.set('');
-        alert('Exam blueprint generated directly from Gemini & loaded successfully!');
+        alert('Exam blueprint generated from Smart API & loaded successfully!');
 
       } catch (parseError) {
-        console.error('Failed to parse Gemini response text into JSON:', parseError);
+        console.error('Failed to parse backend response into JSON:', parseError);
         this.isAiGenerating.set(false);
         alert('Error processing the AI response format.');
       }
     },
     error: (err) => {
-      console.error('Gemini Direct Connection API failed:', err);
+      console.error('Smart API Connection failed:', err);
       this.isAiGenerating.set(false);
-      alert('❌ Connection error with Gemini. Check your API Key or Network.');
+      alert('❌ Connection error with the Server. Check network logs.');
     }
   });
 }

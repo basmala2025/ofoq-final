@@ -104,12 +104,13 @@ export class TaApiService {
   private geminiApiKey = 'AQ.Ab8RN6LjwvkZMJX_OKs1x-Nf1-bTA-skORdX0uKSP86dfH5t1w';
 
  generateExamWithAI(prompt: string): Observable<any> {
-  const serverIp = '18.224.50.12';
-  const url = `http://${serverIp}:3000/api/exams/generate-ai`;
+  const backendUrl = `http://13.62.175.4:3000/api/exams/generate-ai`;
 
-  const payload = { prompt: prompt };
+  const payload = {
+    prompt: prompt
+  };
 
-  return this.http.post<any>(url, payload, {
+  return this.http.post<any>(backendUrl, payload, {
     context: new HttpContext().set(TaApiService.BYPASS_AUTH, true)
   });
 }

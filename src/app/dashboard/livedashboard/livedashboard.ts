@@ -98,20 +98,24 @@ export class LiveDashboard implements OnInit, OnDestroy {
     });
   }
 
-  private setupWebSocketListener(): void {
+ private setupWebSocketListener(): void {
+    // بناء الاتصال باستخدام الكلاس الصحيح HubConnectionBuilder
     this.hubConnection = new signalR.HubConnectionBuilder()
-      .withUrl('https://your-backend-api.com/attendanceHub', {
-        skipNegotiation: true,
-        transport: signalR.HttpTransportType.WebSockets
+      .withUrl('https://ofoqai.runasp.net/attendanceHub', {
+        // إجبار الاتصال على WebSockets مباشرة وتخطي الـ Negotiation لمنع خطأ الـ 200 OK
+        transport: signalR.HttpTransportType.WebSockets,
+        skipNegotiation: true
       })
       .withAutomaticReconnect()
       .build();
 
+    // بدء تشغيل الاتصال
     this.hubConnection
       .start()
       .then(() => console.log('SignalR Connected successfully! Waiting for real-time data...'))
       .catch(err => console.error('Error while starting SignalR connection: ', err));
 
+    // الاستماع لحدث تسجيل حضور الطلاب
     this.hubConnection.on('StudentAttended', (payload: any) => {
       console.log('New student checked in live:', payload);
       this.handleLiveStudentAttendance(payload);
