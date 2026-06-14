@@ -195,44 +195,67 @@ triggerAlarm(reason: string) {
 
     const nextCount = this.violationCount + 1;
 
+    // ✅ التعديل السحري: نبعت الـ proctorSessionId المبرمج في الكاميرا والويب سوكيت
+    // لتجنب إيرور "Proctor session not found"
     const body = {
-      sessionId: this.examSessionId,
+      sessionId: this.proctorSessionId || this.examSessionId, // استخدام الـ Proctor ID كأولوية قصوى
+      proctorSessionId: this.proctorSessionId || this.examSessionId, // احتياطاً لو الباك إند مستني الاسم ده
       violationType: reason,
       alarmCount: nextCount
     };
 
+    console.log('🚨 [OFOQ AI] Syncing secure violation token:', body);
+
     this.http.post('https://ofoqai.runasp.net/api/v1/exam/log-violation', body, { headers }).subscribe({
       next: (res: any) => {
-        // نحدث العداد بناءً على رد الباك إند الموثوق فقط
-        this.violationCount = res.currentViolationCount || nextCount;
-        localStorage.setItem('ofoq_violation_count', this.violationCount.toString());
+        // لو الباك إند رجع فريسة نجاح والـ success بـ true
+        if (res && res.success !== false) {
+          this.violationCount = res.currentViolationCount || nextCount;
+          localStorage.setItem('ofoq_violation_count', this.violationCount.toString());
 
-        if (res.forceSubmitted === true || this.violationCount >= 3 || res.shouldTerminate) {
-          this.isRedAlarm = true;
-          this.securityMessage = res.message || `CRITICAL: Violations threshold breached (3/3).`;
-          this.showSecurityToast = true;
+          if (res.forceSubmitted === true || this.violationCount >= 3 || res.shouldTerminate) {
+            this.isRedAlarm = true;
+            this.securityMessage = res.message || `CRITICAL: Maximum violations reached (3/3). Exam revoked.`;
+            this.showSecurityToast = true;
 
-          // هندي مهلة للطالب يشوف التوست قبل ما نعمل التوجيه عشان الـ Guard ميتفاجئش
-          setTimeout(() => {
-            this.forceSubmitAndExit();
-          }, 2000);
+            setTimeout(() => {
+              this.forceSubmitAndExit();
+            }, 2000);
+          } else {
+            this.securityMessage = `🚨 ALARM: ${reason}. Violations: ${this.violationCount}/3.`;
+            this.isRedAlarm = true;
+            this.showSecurityToast = true;
+            setTimeout(() => this.showSecurityToast = false, 4000);
+          }
         } else {
-          this.securityMessage = `🚨 ALARM: ${reason}. Violations: ${this.violationCount}/3.`;
-          this.isRedAlarm = true;
-          this.showSecurityToast = true;
-          this.cdr.detectChanges(); // نجبر الكاميرا والـ UI يفضلوا صاحيين
-          setTimeout(() => this.showSecurityToast = false, 4000);
+          // لو السيرفر رد بـ success: false (زي الـ session not found)
+          console.warn('⚠️ Backend rejected violation sync:', res?.message);
+          this.applyLocalFallbackCount(nextCount, reason);
         }
       },
       error: (err) => {
-        console.error("❌ Backend log dropped. Keeping screen active.", err);
-        // 💥 التعديل السحري: شيلنا الـ forceSubmit الإجباري من الـ error
-        // عشان لو ريكويست الـ AI علق للحظة، الامتحان ميرميش الطالب بره ويقفل الكاميرا
-        this.securityMessage = `⚠️ Sync Warning: ${reason}`;
-        this.showSecurityToast = true;
-        setTimeout(() => this.showSecurityToast = false, 3000);
+        console.error("❌ Failed to log official violation to .NET server:", err);
+        this.applyLocalFallbackCount(nextCount, reason);
       }
     });
+  }
+
+  // دالة حماية إضافية (Local Fallback) عشان لو السيرفر مهنج أو الجلسة ضايعة، الإنذار يشتغل محلياً برضه وميضيعش!
+  private applyLocalFallbackCount(nextCount: number, reason: string) {
+    this.violationCount = nextCount;
+    localStorage.setItem('ofoq_violation_count', this.violationCount.toString());
+
+    if (this.violationCount >= 3) {
+      this.isRedAlarm = true;
+      this.securityMessage = `CRITICAL: Violations threshold breached (${this.violationCount}/3). Force submitting...`;
+      this.showSecurityToast = true;
+      setTimeout(() => this.forceSubmitAndExit(), 2000);
+    } else {
+      this.securityMessage = `🚨 LOCAL ALARM: ${reason}. Violations: ${this.violationCount}/3.`;
+      this.isRedAlarm = true;
+      this.showSecurityToast = true;
+      setTimeout(() => this.showSecurityToast = false, 4000);
+    }
   }
 
   // =========================================================================
